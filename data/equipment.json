@@ -1,0 +1,186 @@
+[
+  {
+    "name_he": "בוסו",
+    "name_en": "BOSU Balance Trainer",
+    "category": "balance",
+    "quantity": 3,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "מדרגה",
+    "name_en": "Step Platform",
+    "category": "cardio",
+    "quantity": 1,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "משקולות יד 1 ק״ג",
+    "name_en": "1 kg Dumbbells",
+    "category": "dumbbells",
+    "quantity": 10,
+    "details": "10 יחידות",
+    "active": true
+  },
+  {
+    "name_he": "משקולות יד 1.5 ק״ג",
+    "name_en": "1.5 kg Dumbbells",
+    "category": "dumbbells",
+    "quantity": 8,
+    "details": "8 יחידות",
+    "active": true
+  },
+  {
+    "name_he": "משקולות יד 2 ק״ג",
+    "name_en": "2 kg Dumbbells",
+    "category": "dumbbells",
+    "quantity": 8,
+    "details": "8 יחידות",
+    "active": true
+  },
+  {
+    "name_he": "משקולות יד 3 ק״ג",
+    "name_en": "3 kg Dumbbells",
+    "category": "dumbbells",
+    "quantity": 8,
+    "details": "8 יחידות",
+    "active": true
+  },
+  {
+    "name_he": "משקולות יד 4 ק״ג",
+    "name_en": "4 kg Dumbbells",
+    "category": "dumbbells",
+    "quantity": 6,
+    "details": "6 יחידות",
+    "active": true
+  },
+  {
+    "name_he": "משקולות יד 5 ק״ג",
+    "name_en": "5 kg Dumbbells",
+    "category": "dumbbells",
+    "quantity": 4,
+    "details": "4 יחידות",
+    "active": true
+  },
+  {
+    "name_he": "משקולות יד 6 ק״ג",
+    "name_en": "6 kg Dumbbells",
+    "category": "dumbbells",
+    "quantity": 4,
+    "details": "4 יחידות",
+    "active": true
+  },
+  {
+    "name_he": "משקולות יד 7.5 ק״ג",
+    "name_en": "7.5 kg Dumbbells",
+    "category": "dumbbells",
+    "quantity": 2,
+    "details": "2 יחידות",
+    "active": true
+  },
+  {
+    "name_he": "משקולות יד 10 ק״ג",
+    "name_en": "10 kg Dumbbells",
+    "category": "dumbbells",
+    "quantity": 2,
+    "details": "2 יחידות",
+    "active": true
+  },
+  {
+    "name_he": "מוט משקולת + סט פלטות",
+    "name_en": "Barbell + Plates Set",
+    "category": "barbells",
+    "quantity": 3,
+    "details": "כל סט עד 20 ק״ג",
+    "active": true
+  },
+  {
+    "name_he": "גומיות התנגדות",
+    "name_en": "Resistance Bands",
+    "category": "bands",
+    "quantity": 12,
+    "details": "12 סטים",
+    "active": true
+  },
+  {
+    "name_he": "גומיות עם ידיות",
+    "name_en": "Resistance Tubes with Handles",
+    "category": "bands",
+    "quantity": 12,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "גומיות ירכיים",
+    "name_en": "Hip / Mini Bands",
+    "category": "bands",
+    "quantity": 10,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "קוביות פילאטיס",
+    "name_en": "Pilates Blocks",
+    "category": "pilates",
+    "quantity": 28,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "מזרני פילאטיס",
+    "name_en": "Pilates Mats",
+    "category": "pilates",
+    "quantity": 12,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "כדורי משקולת 1 ק״ג",
+    "name_en": "1 kg Weighted Balls",
+    "category": "balls",
+    "quantity": 14,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "כדורי פיזיו",
+    "name_en": "Swiss / Physio Balls",
+    "category": "balls",
+    "quantity": 5,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "אוברבול",
+    "name_en": "Overball / Small Pilates Ball",
+    "category": "balls",
+    "quantity": 5,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "גלילי פילאטיס",
+    "name_en": "Pilates / Foam Rollers",
+    "category": "recovery",
+    "quantity": 11,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "פיתה שיווי משקל",
+    "name_en": "Balance Disc",
+    "category": "balance",
+    "quantity": 4,
+    "details": "",
+    "active": true
+  },
+  {
+    "name_he": "קטלבל 4–8 ק״ג",
+    "name_en": "Kettlebells 4–8 kg",
+    "category": "kettlebells",
+    "quantity": 12,
+    "details": "הנחת V1: 4 יחידות בכל אחד מהמשקלים 4, 6, 8 ק״ג — יש לאשר",
+    "active": true
+  }
+]
