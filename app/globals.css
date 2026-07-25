@@ -4,3 +4,16 @@
 @media(max-width:760px){.shell{padding:12px}.hero{align-items:flex-start}.top-note{display:none}.logo{width:80px;height:72px}.panel{padding:16px;border-radius:20px}.tabs{overflow-x:auto;flex-wrap:nowrap}.tabs button{white-space:nowrap}}
 
 .active-limit{outline:2px solid currentColor;box-shadow:0 0 0 2px rgba(0,0,0,.05) inset}
+
+/* V2.2 exercise detail pages */
+.exercise-page{max-width:980px;margin:0 auto;padding:24px 16px}
+.share-brand{text-align:center;margin:10px 0 20px}.share-brand img{width:118px;height:auto}
+.exercise-detail{padding:clamp(20px,4vw,42px)}
+.eyebrow{font-size:12px;letter-spacing:.18em;color:var(--muted);font-weight:800;margin-bottom:7px}
+.detail-heading h1{font-size:clamp(34px,6vw,58px);margin:0 0 5px}
+.detail-tags{margin:18px 0}
+.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+.detail-block{border:1px solid var(--line);border-radius:18px;padding:16px;background:#fff}.detail-block h3{margin:0 0 7px}.detail-block p{margin:0;line-height:1.65}.detail-block.wide{grid-column:1/-1}
+.detail-safety{margin:18px 0;line-height:1.65}.detail-safety .small{margin-top:8px}
+.detail-links,.exercise-actions{margin-top:14px}.exercise-actions{padding-top:14px;border-top:1px solid var(--line)}
+@media(max-width:640px){.detail-grid{grid-template-columns:1fr}.detail-block.wide{grid-column:auto}.detail-heading{align-items:flex-start}.detail-heading>.btn{margin-top:6px}}
