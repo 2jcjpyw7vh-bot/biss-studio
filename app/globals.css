@@ -189,3 +189,265 @@ body{
   .exercise-page .exercise-actions{display:grid;grid-template-columns:1fr 1fr}
   .exercise-page .exercise-actions .btn:first-child{grid-column:1/-1}
 }
+
+
+/* =========================================================
+   BISS Studio V2.4 — UX/UI refinement
+   Visual layer only: no API/Supabase/business logic changes.
+   ========================================================= */
+
+:root{
+  --v24-bg:#f7f8f6;
+  --v24-card:#ffffff;
+  --v24-ink:#161a18;
+  --v24-muted:#66706a;
+  --v24-line:#e4e8e4;
+  --v24-soft:#eff5f0;
+  --v24-warm:#fff6df;
+  --v24-radius-xl:30px;
+  --v24-radius-lg:22px;
+  --v24-shadow:0 14px 38px rgba(21,30,25,.06);
+}
+
+body{background:var(--v24-bg);color:var(--v24-ink)}
+
+.v24-exercise-shell{
+  max-width:1120px;
+  margin:auto;
+  padding:24px 18px 48px;
+}
+
+.v24-topbar{
+  position:sticky;
+  top:0;
+  z-index:4;
+  background:rgba(247,248,246,.92);
+  backdrop-filter:blur(10px);
+  padding:10px 0;
+  margin-bottom:14px;
+}
+
+.v24-topbar .back-link{
+  background:#fff;
+  border:1px solid var(--v24-line);
+  padding:10px 14px;
+  border-radius:999px;
+  box-shadow:0 6px 18px rgba(21,30,25,.04);
+}
+
+.v24-hero{
+  gap:18px;
+}
+
+.v24-hero > *{
+  box-shadow:var(--v24-shadow);
+}
+
+.exercise-media-placeholder,
+.exercise-hero-copy{
+  border-radius:var(--v24-radius-xl)!important;
+}
+
+.exercise-hero-copy{
+  border:1px solid var(--v24-line)!important;
+}
+
+.exercise-hero-copy .eyebrow{
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size:11px;
+}
+
+.exercise-hero-copy h1{
+  line-height:.98;
+  margin-top:10px!important;
+}
+
+.exercise-actions .btn{
+  border-radius:14px;
+  min-height:44px;
+  padding-inline:15px;
+}
+
+.exercise-actions .btn.primary{
+  box-shadow:0 8px 20px rgba(21,30,25,.10);
+}
+
+.v24-detail-grid{
+  gap:12px!important;
+}
+
+.v24-detail-grid .detail-card{
+  min-height:150px!important;
+  border:1px solid var(--v24-line)!important;
+  border-radius:var(--v24-radius-lg)!important;
+  box-shadow:0 8px 24px rgba(21,30,25,.035)!important;
+  transition:transform .16s ease, box-shadow .16s ease;
+}
+
+.v24-detail-grid .detail-card:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 30px rgba(21,30,25,.06)!important;
+}
+
+.v24-detail-grid .detail-card-accent{
+  background:linear-gradient(180deg,#ffffff,#f7fbf7);
+  border-top:4px solid #66a36f!important;
+}
+
+.v24-detail-grid .safety-card{
+  grid-column:1/-1;
+  background:linear-gradient(180deg,#fffdf7,#fff8e7);
+  border:1px solid #f0d58f!important;
+  border-top:4px solid #d2a93b!important;
+}
+
+.v24-video-card{
+  border:1px solid var(--v24-line)!important;
+  border-radius:var(--v24-radius-lg)!important;
+  box-shadow:0 10px 28px rgba(21,30,25,.04);
+  background:linear-gradient(135deg,#fff,#f7faf8);
+}
+
+.v24-video-card .btn{
+  min-width:190px;
+  justify-content:center;
+}
+
+.v24-bottom-nav{
+  background:#fff;
+  border:1px solid var(--v24-line)!important;
+  border-radius:18px;
+  padding:14px!important;
+  box-shadow:0 8px 22px rgba(21,30,25,.035);
+}
+
+/* Workout output polish */
+.v24-workout,
+.workout{
+  background:transparent;
+}
+
+.v24-workout-item,
+.workout-item{
+  border-radius:18px!important;
+  background:#fff;
+  border:1px solid var(--v24-line)!important;
+  box-shadow:0 8px 22px rgba(21,30,25,.035);
+  padding:16px!important;
+  margin-bottom:10px;
+}
+
+.v24-workout-item a,
+.workout-item a{
+  font-weight:850;
+  text-decoration:none;
+}
+
+.v24-session,
+.session{
+  border-radius:22px!important;
+  overflow:hidden;
+}
+
+.v24-sharebox,
+.sharebox{
+  border-radius:22px!important;
+  border:1px dashed #ccd5cf!important;
+  background:linear-gradient(180deg,#fff,#f9fbf9)!important;
+}
+
+.v24-sharebox .btn,
+.sharebox .btn{
+  min-height:46px;
+  border-radius:14px;
+}
+
+/* Library cards */
+.exercise-card{
+  border:1px solid var(--v24-line)!important;
+  border-radius:22px!important;
+  box-shadow:0 10px 28px rgba(21,30,25,.045)!important;
+}
+
+.exercise-card .exercise-share{
+  gap:8px;
+}
+
+.exercise-card .exercise-share .btn{
+  min-height:40px;
+}
+
+/* Better button hierarchy everywhere */
+.btn{
+  border-radius:14px!important;
+}
+
+.btn.primary{
+  font-weight:900;
+}
+
+/* Desktop spacing */
+@media(min-width:900px){
+  .v24-detail-grid{
+    grid-template-columns:repeat(3,1fr)!important;
+  }
+  .v24-video-card{
+    padding:26px!important;
+  }
+}
+
+/* Mobile UX */
+@media(max-width:800px){
+  .v24-exercise-shell{
+    padding:12px 12px 34px;
+  }
+  .v24-topbar{
+    margin-inline:-4px;
+    padding-inline:4px;
+  }
+  .v24-hero{
+    grid-template-columns:1fr!important;
+  }
+  .exercise-media-placeholder{
+    min-height:220px!important;
+  }
+  .exercise-hero-copy{
+    padding:20px!important;
+  }
+  .exercise-hero-copy h1{
+    font-size:40px!important;
+  }
+  .v24-detail-grid{
+    grid-template-columns:1fr 1fr!important;
+  }
+  .v24-video-card{
+    align-items:stretch!important;
+  }
+  .v24-video-card .btn{
+    width:100%;
+  }
+  .v24-bottom-nav{
+    flex-direction:column!important;
+    align-items:stretch!important;
+  }
+}
+
+@media(max-width:520px){
+  .v24-detail-grid{
+    grid-template-columns:1fr!important;
+  }
+  .v24-detail-grid .safety-card{
+    grid-column:auto;
+  }
+  .exercise-actions{
+    display:grid!important;
+    grid-template-columns:1fr 1fr;
+  }
+  .exercise-actions .btn:first-child{
+    grid-column:1/-1;
+  }
+  .v24-bottom-nav .exercise-actions{
+    grid-template-columns:1fr 1fr;
+  }
+}
