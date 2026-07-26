@@ -28,6 +28,7 @@ export default function Home(){
  const [musicUrl,setMusicUrl]=useState(""),[musicTitle,setMusicTitle]=useState("");
  const [workout,setWorkout]=useState(null),[program,setProgram]=useState(null),[homework,setHomework]=useState(null);
  const [inventory,setInventory]=useState(equipmentSeed),[pin,setPin]=useState(""),[adminMsg,setAdminMsg]=useState("");
+  const [savingEquipment,setSavingEquipment]=useState(false);
  const [homeGoal,setHomeGoal]=useState("חיזוק"),[homeFreq,setHomeFreq]=useState(3),[homeMinutes,setHomeMinutes]=useState(10),[homeNote,setHomeNote]=useState("");
  const [programWeeks,setProgramWeeks]=useState(4),[programFreq,setProgramFreq]=useState(2);
  const [exerciseMusic,setExerciseMusic]=useState({});
@@ -137,8 +138,37 @@ export default function Home(){
  }
  async function refreshInventory(){try{const r=await fetch("/api/equipment");if(r.ok){const d=await r.json();if(Array.isArray(d)&&d.length)setInventory(d)}}catch{}}
  async function adminRequest(method,body){const r=await fetch("/api/equipment",{method,headers:{"Content-Type":"application/json","x-admin-pin":pin},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||"שגיאה");return d}
- async function addEquipment(e){e.preventDefault();const f=new FormData(e.currentTarget);try{await adminRequest("POST",{name_he:f.get("name"),name_en:f.get("nameEn")||"",category:f.get("category")||"other",quantity:Number(f.get("quantity")||1),details:f.get("details")||"",active:true});setAdminMsg("הציוד נוסף");e.currentTarget.reset();refreshInventory()}catch(err){setAdminMsg(err.message)}}
- async function changeQty(item,delta){try{await adminRequest("PATCH",{id:item.id,quantity:Math.max(0,item.quantity+delta)});refreshInventory()}catch(e){setAdminMsg(e.message)}}
+async function addEquipment(e){
+  e.preventDefault();
+
+  if(savingEquipment) return;
+
+  const form=e.currentTarget;
+  const f=new FormData(form);
+
+  setSavingEquipment(true);
+  setAdminMsg("שומר את הציוד...");
+
+  try{
+    await adminRequest("POST",{
+      name_he:f.get("name"),
+      name_en:f.get("nameEn")||"",
+      category:f.get("category")||"other",
+      quantity:Number(f.get("quantity")||1),
+      details:f.get("details")||"",
+      active:true
+    });
+
+    setAdminMsg("✓ הציוד נוסף בהצלחה");
+    form.reset();
+    await refreshInventory();
+  }catch(err){
+    setAdminMsg(`⚠️ ${err.message}`);
+  }finally{
+    setSavingEquipment(false);
+  }
+} 
+  async function changeQty(item,delta){try{await adminRequest("PATCH",{id:item.id,quantity:Math.max(0,item.quantity+delta)});refreshInventory()}catch(e){setAdminMsg(e.message)}}
  async function toggleItem(item){try{await adminRequest("PATCH",{id:item.id,active:item.active===false});refreshInventory()}catch(e){setAdminMsg(e.message)}}
  async function deleteItem(item){if(!confirm(`למחוק את ${item.name_he}?`))return;try{await adminRequest("DELETE",{id:item.id});refreshInventory()}catch(e){setAdminMsg(e.message)}}
  const ShareButtons=({type,payload})=><div className="sharebox v24-sharebox"><strong>שיתוף</strong><div className="small">קישור נקי לצפייה, ללא מסכי ניהול.</div><div className="row" style={{marginTop:10}}><button className="btn green" onClick={()=>share(type,payload,"whatsapp")}>WhatsApp</button><button className="btn blue" onClick={()=>share(type,payload,"email")}>מייל</button><button className="btn" onClick={()=>share(type,payload,"copy")}>העתקת קישור</button></div></div>;
@@ -167,7 +197,13 @@ export default function Home(){
   {tab==="homeworkResult"&&homework&&<section className="panel"><h2>{homework.title}</h2><div className="sub">{homework.meta}</div>{homework.musicUrl&&<div className="music">🎧 <a href={homework.musicUrl} target="_blank" rel="noreferrer">פתחי ב-Spotify · {homework.musicTitle}</a></div>}{homework.note&&<div className="safe" style={{margin:"12px 0"}}>הערת המדריכה: {homework.note}</div>}{homework.items.map((x,i)=><div className="workout-item v24-workout-item" key={x.id}><strong>{i+1}. {x.he}</strong><div>{x.prescription}</div><div className="small">{x.cue}</div><div style={{marginTop:7}}><Link className="btn" href={`/exercise/${x.id}`}>פתח תרגיל</Link></div></div>)}<ShareButtons type="homework" payload={homework}/></section>}
   {tab==="programResult"&&program&&<section className="panel"><h2>{program.title}</h2><div className="sub">{program.meta}</div>{program.musicUrl&&<div className="music">🎧 <a href={program.musicUrl} target="_blank" rel="noreferrer">פתחי ב-Spotify · {program.musicTitle}</a></div>}{program.sessions.map((s,i)=><div className="card" style={{marginTop:10}} key={i}><h3>{s.name}</h3><div className="small">התקדמות: {s.progression}</div>{s.items.map((x,j)=><div className="workout-item v24-workout-item" key={x.id+j}><strong>{x.he}</strong> · {x.prescription}</div>)}</div>)}<ShareButtons type="program" payload={program}/></section>}
 
-  {tab==="equipment"&&<section className="panel"><div className="row between"><div><h2>מלאי הסטודיו</h2><div className="sub">הכמויות משמשות את מנגנון חלוקת התחנות.</div></div><div className="kpi">{inventory.reduce((s,x)=>s+(x.active===false?0:x.quantity),0)}</div></div><div className="grid">{inventory.map((x,i)=><article className={`card inventory-card ${x.active===false?"unavailable":""}`} key={x.id||i}><h3>{x.name_he}</h3><div className="small">{x.name_en}</div><p><strong>{x.quantity}</strong> יחידות {x.active===false&&"· לא זמין כרגע"}</p>{x.details&&<div className="small">{x.details}</div>}{x.id&&<div className="row" style={{marginTop:10}}><button className="btn" onClick={()=>changeQty(x,-1)}>−</button><button className="btn" onClick={()=>changeQty(x,1)}>+</button><button className="btn" onClick={()=>toggleItem(x)}>{x.active===false?"החזרה לזמין":"לא זמין"}</button><button className="btn red" onClick={()=>deleteItem(x)}>מחיקה</button></div>}</article>)}</div><div className="admin"><h3>ניהול ציוד</h3><div className="small">פעולות שינוי דורשות PIN מנהל. ה-PIN נבדק בצד השרת ואינו נשמר בקוד הדפדפן.</div><div className="filters"><label className="field">PIN<input type="password" value={pin} onChange={e=>setPin(e.target.value)} placeholder="PIN מנהל"/></label></div><form className="filters" onSubmit={addEquipment}><input name="name" required placeholder="שם הציוד בעברית"/><input name="nameEn" placeholder="שם באנגלית"/><input name="quantity" type="number" min="0" required placeholder="כמות"/><input name="category" placeholder="קטגוריה"/><input name="details" placeholder="פרטים / משקל"/><button className="btn primary" type="submit">הוספת ציוד</button></form>{adminMsg&&<div className="notice">{adminMsg}</div>}</div></section>}
+  {tab==="equipment"&&<section className="panel"><div className="row between"><div><h2>מלאי הסטודיו</h2><div className="sub">הכמויות משמשות את מנגנון חלוקת התחנות.</div></div><div className="kpi">{inventory.reduce((s,x)=>s+(x.active===false?0:x.quantity),0)}</div></div><div className="grid">{inventory.map((x,i)=><article className={`card inventory-card ${x.active===false?"unavailable":""}`} key={x.id||i}><h3>{x.name_he}</h3><div className="small">{x.name_en}</div><p><strong>{x.quantity}</strong> יחידות {x.active===false&&"· לא זמין כרגע"}</p>{x.details&&<div className="small">{x.details}</div>}{x.id&&<div className="row" style={{marginTop:10}}><button className="btn" onClick={()=>changeQty(x,-1)}>−</button><button className="btn" onClick={()=>changeQty(x,1)}>+</button><button className="btn" onClick={()=>toggleItem(x)}>{x.active===false?"החזרה לזמין":"לא זמין"}</button><button className="btn red" onClick={()=>deleteItem(x)}>מחיקה</button></div>}</article>)}</div><div className="admin"><h3>ניהול ציוד</h3><div className="small">פעולות שינוי דורשות PIN מנהל. ה-PIN נבדק בצד השרת ואינו נשמר בקוד הדפדפן.</div><div className="filters"><label className="field">PIN<input type="password" value={pin} onChange={e=>setPin(e.target.value)} placeholder="PIN מנהל"/></label></div><form className="filters" onSubmit={addEquipment}><input name="name" required placeholder="שם הציוד בעברית"/><input name="nameEn" placeholder="שם באנגלית"/><input name="quantity" type="number" min="0" required placeholder="כמות"/><input name="category" placeholder="קטגוריה"/><input name="details" placeholder="פרטים / משקל"/><button
+  className="btn primary"
+  type="submit"
+  disabled={savingEquipment}
+>
+  {savingEquipment ? "שומר..." : "הוספת ציוד"}
+</button></form>{adminMsg&&<div className="notice">{adminMsg}</div>}</div></section>}
   <footer className="footer">BISS · מערכת עבודה פנימית לסטודיו</footer>
  </main>
 }
