@@ -17,3 +17,175 @@
 .detail-safety{margin:18px 0;line-height:1.65}.detail-safety .small{margin-top:8px}
 .detail-links,.exercise-actions{margin-top:14px}.exercise-actions{padding-top:14px;border-top:1px solid var(--line)}
 @media(max-width:640px){.detail-grid{grid-template-columns:1fr}.detail-block.wide{grid-column:auto}.detail-heading{align-items:flex-start}.detail-heading>.btn{margin-top:6px}}
+
+
+/* =========================================================
+   BISS Studio V2.3 — UX/UI polish layer
+   Keeps V2.2 functionality intact.
+   ========================================================= */
+
+:root{
+  --biss-radius-lg:24px;
+  --biss-radius-md:18px;
+  --biss-shadow:0 12px 34px rgba(23,32,27,.055);
+}
+
+body{
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+.card,.panel,.safe,.music,.notice{
+  border-radius:var(--biss-radius-md);
+}
+
+.card{
+  box-shadow:var(--biss-shadow);
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+
+.card:hover{
+  transform:translateY(-1px);
+  box-shadow:0 15px 38px rgba(23,32,27,.075);
+}
+
+.btn{
+  min-height:42px;
+  border-radius:14px;
+  font-weight:800;
+  transition:transform .12s ease,opacity .12s ease,box-shadow .12s ease;
+}
+
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+
+.tag{
+  border-radius:999px;
+  padding:6px 10px;
+  font-weight:750;
+}
+
+/* Exercise library */
+.exercise-library-intro{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:16px;
+}
+
+.exercise-library-intro h2{margin-bottom:4px}
+
+.exercise-card-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  padding-top:12px;
+  margin-top:12px;
+  border-top:1px solid var(--line);
+}
+
+/* Exercise detail page */
+.exercise-page{
+  max-width:1080px;
+  margin:0 auto;
+  padding:22px;
+}
+
+.exercise-page .back-link{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  text-decoration:none;
+  font-weight:850;
+  margin:4px 0 16px;
+}
+
+.exercise-page .hero,
+.exercise-page .exercise-hero{
+  border-radius:28px;
+  overflow:hidden;
+}
+
+.exercise-page h1{
+  letter-spacing:-.035em;
+}
+
+.exercise-page .exercise-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:18px;
+}
+
+.exercise-media-slot{
+  min-height:250px;
+  border:1px dashed rgba(25,35,29,.18);
+  border-radius:24px;
+  background:linear-gradient(145deg,#f5f8f4,#eef2f5);
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:24px;
+  position:relative;
+  overflow:hidden;
+}
+
+.exercise-media-slot:before{
+  content:"BISS";
+  position:absolute;
+  left:20px;
+  top:16px;
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.16em;
+  opacity:.55;
+}
+
+.exercise-media-slot strong{
+  font-size:30px;
+  line-height:1.05;
+}
+
+.exercise-media-slot small{
+  opacity:.58;
+  margin-top:5px;
+}
+
+.exercise-info-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+  margin-top:16px;
+}
+
+.exercise-info-grid > *{
+  min-width:0;
+}
+
+.exercise-page .detail-card{
+  border-radius:20px;
+  box-shadow:0 8px 25px rgba(23,32,27,.035);
+}
+
+.exercise-page .safety-card{
+  border-top:4px solid #d85d52;
+}
+
+.exercise-page .video-card{
+  border-radius:22px;
+}
+
+@media (max-width:800px){
+  .exercise-page{padding:14px}
+  .exercise-info-grid{grid-template-columns:1fr 1fr}
+  .exercise-library-intro{align-items:flex-start;flex-direction:column}
+  .exercise-page .exercise-actions .btn{flex:1}
+}
+
+@media (max-width:520px){
+  .exercise-info-grid{grid-template-columns:1fr}
+  .btn{min-height:46px}
+  .exercise-page h1{font-size:36px}
+  .exercise-page .exercise-actions{display:grid;grid-template-columns:1fr 1fr}
+  .exercise-page .exercise-actions .btn:first-child{grid-column:1/-1}
+}
