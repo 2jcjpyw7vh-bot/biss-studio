@@ -5,8 +5,14 @@ import equipmentSeed from "../data/equipment.json";
 import exercises from "../data/exercises.json";
 
 const allRegions=["הכל",...Array.from(new Set(exercises.map(x=>x.region)))];
-const allEquipment=["הכל","ללא ציוד",...Array.from(new Set(exercises.map(x=>x.equipment).filter(x=>x&&x!=="ללא ציוד")))];
-const structures=["תחנות","סטים וחזרות","AMRAP","EMOM","פירמידה"];
+const allEquipment=[
+  "הכל",
+  "ללא ציוד",
+  ...Array.from(new Set(exercises.map(x=>x.equipment).filter(x=>x&&x!=="ללא ציוד"))),
+  "בר",
+  "נקודת עגינה רצפתית",
+  "נקודת עגינה גובה מותן"
+];const structures=["תחנות","סטים וחזרות","AMRAP","EMOM","פירמידה"];
 const levels=["מתחילים","בינוניים","מתקדמים","מעורב"];
 const goals=["חיזוק","אירובי","מוביליטי","שחרור","יציבות"];
 const limitationProfiles=[
