@@ -1,0 +1,11 @@
+BISS Studio V2.6
+
+1. ב-GitHub פתח biss-studio/app
+2. פתח את BISS-Studio-V2.6-Professional-UI/app במחשב
+3. העלה את התוכן שבתוך app — לא את תיקיית app עצמה
+4. ודא שאין app/app
+5. Commit directly to main
+6. המתן ב-Vercel עד Ready
+7. בדוק דף הבית, בניית אימון, פתיחת תרגיל ומובייל
+
+לא שונו Secret Keys או הגדרות Supabase.
