@@ -18,6 +18,8 @@ export default async function ExercisePage({params,searchParams}){
   const x=exercises.find(e=>e.id===id);
   if(!x)notFound();
   const youtube=`https://www.youtube.com/results?search_query=${encodeURIComponent(`How to ${x.en} exercise`)}`;
+  const videoUrl=x.videoUrl||"";
+const imageUrl=x.imageUrl||"";
   const fromWorkout=query?.from==="workout";
 
   return <main className="exercise-page v26-exercise-page">
@@ -28,11 +30,50 @@ export default async function ExercisePage({params,searchParams}){
 
     <section className="v26-exercise-hero">
       <div className="v26-media">
-        <div className="v26-media-badge">BISS MOVEMENT</div>
-        <div className="v26-media-mark">▶</div>
-        <div><strong>{x.he}</strong><span>{x.en}</span></div>
-        <a href={youtube} target="_blank" rel="noreferrer" className="v26-media-link">פתח סרטון הדגמה ↗</a>
+  <div className="v26-media-badge">BISS MOVEMENT</div>
+
+  {videoUrl ? (
+    <iframe
+      src={videoUrl}
+      title={`${x.he} - ${x.en}`}
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+      style={{
+        width:"100%",
+        minHeight:"360px",
+        border:"0",
+        borderRadius:"22px"
+      }}
+    />
+  ) : imageUrl ? (
+    <img
+      src={imageUrl}
+      alt={`${x.he} - ${x.en}`}
+      style={{
+        width:"100%",
+        minHeight:"360px",
+        objectFit:"cover",
+        borderRadius:"22px"
+      }}
+    />
+  ) : (
+    <>
+      <div className="v26-media-mark">▶</div>
+      <div>
+        <strong>{x.he}</strong>
+        <span>{x.en}</span>
       </div>
+      <a
+        href={youtube}
+        target="_blank"
+        rel="noreferrer"
+        className="v26-media-link"
+      >
+        פתח סרטון הדגמה ↗
+      </a>
+    </>
+  )}
+</div>
       <div className="v26-exercise-summary">
         <div className="eyebrow">BISS EXERCISE LIBRARY</div>
         <h1>{x.he}</h1>
