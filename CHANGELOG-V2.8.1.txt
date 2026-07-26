@@ -1,0 +1,10 @@
+BISS Studio V2.8.1
+==================
+
+Added after V2.8:
+- Multi-select body regions.
+- Multi-select equipment.
+- Multi-select is available in workout builder, exercise library, homework, and multi-week programs.
+- Empty selection / "הכל" means no filtering.
+- Workout selection balances across selected equipment and body regions when possible.
+- Multi-select UI uses tappable chips; no Ctrl/Shift required.

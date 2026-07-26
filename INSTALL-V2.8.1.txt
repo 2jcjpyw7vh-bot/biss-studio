@@ -1,0 +1,18 @@
+BISS Studio V2.8.1 — Update Overlay
+
+This ZIP contains only files that are new or replaced by V2.8.1.
+It is designed to be extracted over the root of an existing BISS Studio repository.
+
+1. Back up / commit the current repository.
+2. Extract this ZIP over the repository root and allow replacement of matching files.
+3. In Supabase SQL Editor run:
+   supabase/v2.8-auto-exercises.sql
+4. Ensure Vercel has:
+   NEXT_PUBLIC_SUPABASE_URL
+   SUPABASE_SECRET_KEY
+   ADMIN_PIN
+   YOUTUBE_API_KEY
+   GEMINI_API_KEY   (required for automatic exercise generation for unknown future equipment)
+5. Redeploy on Vercel.
+
+No line-by-line code editing is required.
