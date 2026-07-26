@@ -24,8 +24,9 @@ export async function GET(request) {
     `https://www.googleapis.com/youtube/v3/search` +
     `?part=snippet` +
     `&type=video` +
-    `&maxResults=1` +
+    `&maxResults=5` +
     `&videoEmbeddable=true` +
+    `&videoDuration=short` +
     `&safeSearch=strict` +
     `&q=${encodeURIComponent(query)}` +
     `&key=${apiKey}`;
@@ -44,7 +45,18 @@ export async function GET(request) {
       );
     }
 
-    const videoId = data.items?.[0]?.id?.videoId;
+   const preferred =
+  data.items?.find(item => {
+    const title = item.snippet?.title?.toLowerCase() || "";
+    return (
+      title.includes("how to") ||
+      title.includes("proper form") ||
+      title.includes("tutorial") ||
+      title.includes("technique")
+    );
+  }) || data.items?.[0];
+
+const videoId = preferred?.id?.videoId;
 
     if (!videoId) {
       return Response.json({ videoUrl: "" });
