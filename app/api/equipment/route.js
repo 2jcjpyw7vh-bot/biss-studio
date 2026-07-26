@@ -5,6 +5,73 @@ import seed from "../../../data/equipment.json";
 const safeEqual=(a,b)=>{const A=Buffer.from(String(a||"")),B=Buffer.from(String(b||""));return A.length===B.length&&crypto.timingSafeEqual(A,B)};
 const isAdmin=req=>Boolean(process.env.ADMIN_PIN)&&safeEqual(req.headers.get("x-admin-pin"),process.env.ADMIN_PIN);
 export async function GET(){const db=supabaseAdmin();if(!db)return NextResponse.json(seed);const {data,error}=await db.from("equipment").select("*").order("created_at");if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json(data?.length?data:seed)}
-export async function POST(req){if(!isAdmin(req))return NextResponse.json({error:"PIN שגוי"},{status:401});const db=supabaseAdmin();if(!db)return NextResponse.json({error:"Supabase עדיין לא מחובר"},{status:503});const b=await req.json();const {data,error}=await db.from("equipment").insert({name_he:b.name_he,name_en:b.name_en||"",category:b.category||"other",quantity:Number(b.quantity||0),details:b.details||"",active:b.active!==false}).select().single();if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json(data)}
-export async function PATCH(req){if(!isAdmin(req))return NextResponse.json({error:"PIN שגוי"},{status:401});const db=supabaseAdmin();if(!db)return NextResponse.json({error:"Supabase עדיין לא מחובר"},{status:503});const b=await req.json(),allowed={};for(const k of ["name_he","name_en","category","quantity","details","active"])if(b[k]!==undefined)allowed[k]=b[k];const {data,error}=await db.from("equipment").update(allowed).eq("id",b.id).select().single();if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json(data)}
+export async function POST(req){
+  if(!isAdmin(req)){
+    return NextResponse.json(
+      {error:"PIN שגוי"},
+      {status:401}
+    );
+  }
+
+  const db=supabaseAdmin();
+
+  if(!db){
+    return NextResponse.json(
+      {error:"Supabase עדיין לא מחובר"},
+      {status:503}
+    );
+  }
+
+  const b=await req.json();
+  const nameHe=String(b.name_he||"").trim();
+
+  if(!nameHe){
+    return NextResponse.json(
+      {error:"חסר שם ציוד"},
+      {status:400}
+    );
+  }
+
+  const {data:existing,error:checkError}=await db
+    .from("equipment")
+    .select("id,name_he")
+    .eq("name_he",nameHe)
+    .limit(1);
+
+  if(checkError){
+    return NextResponse.json(
+      {error:checkError.message},
+      {status:500}
+    );
+  }
+
+  if(existing?.length){
+    return NextResponse.json(
+      {error:"הציוד כבר קיים במלאי"},
+      {status:409}
+    );
+  }
+
+  const {data,error}=await db
+    .from("equipment")
+    .insert({
+      name_he:nameHe,
+      name_en:String(b.name_en||"").trim(),
+      category:b.category||"other",
+      quantity:Number(b.quantity||0),
+      details:b.details||"",
+      active:b.active!==false
+    })
+    .select()
+    .single();
+
+  if(error){
+    return NextResponse.json(
+      {error:error.message},
+      {status:500}
+    );
+  }
+
+  return NextResponse.json(data);
+}export async function PATCH(req){if(!isAdmin(req))return NextResponse.json({error:"PIN שגוי"},{status:401});const db=supabaseAdmin();if(!db)return NextResponse.json({error:"Supabase עדיין לא מחובר"},{status:503});const b=await req.json(),allowed={};for(const k of ["name_he","name_en","category","quantity","details","active"])if(b[k]!==undefined)allowed[k]=b[k];const {data,error}=await db.from("equipment").update(allowed).eq("id",b.id).select().single();if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json(data)}
 export async function DELETE(req){if(!isAdmin(req))return NextResponse.json({error:"PIN שגוי"},{status:401});const db=supabaseAdmin();if(!db)return NextResponse.json({error:"Supabase עדיין לא מחובר"},{status:503});const {id}=await req.json();const {error}=await db.from("equipment").delete().eq("id",id);if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json({ok:true})}
