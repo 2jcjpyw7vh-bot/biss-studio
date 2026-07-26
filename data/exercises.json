@@ -12,7 +12,10 @@
     "goal": "חיזוק",
     "regression": "סקוואט לכיסא",
     "progression": "סקוואט עם משקל",
-    "safety": "לעצור אם מופיע כאב חד בברך או בגב."
+    "safety": "לעצור אם מופיע כאב חד בדרך או בברך.",
+"videoUrl": "https://www.youtube.com/embed/otzWCWpuW-A",
+"imageUrl": ""
+
   },
   {
     "id": "goblet-squat",
