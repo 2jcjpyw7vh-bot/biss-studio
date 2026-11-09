@@ -3,6 +3,7 @@ import crypto from "crypto";
 import {supabaseAdmin} from "../../../lib/supabase";
 import seed from "../../../data/equipment.json";
 import {generateExercisesForEquipment} from "../../../lib/exercise-generator";
+import {writeAudit} from "../../../lib/audit";
 export const dynamic="force-dynamic";
 const noStore={"Cache-Control":"no-store, max-age=0"};
 const safeEqual=(a,b)=>{const A=Buffer.from(String(a||"")),B=Buffer.from(String(b||""));return A.length===B.length&&crypto.timingSafeEqual(A,B)};
@@ -25,8 +26,10 @@ export async function POST(req){
      const{error:exerciseError}=await db.from("exercises").upsert(rows,{onConflict:"exercise_id"});if(exerciseError)throw exerciseError;generatedCount=rows.length;
    }else generationWarning="הציוד נוסף, אך לא נוצרו תרגילים. לציוד לא מוכר יש להגדיר GEMINI_API_KEY.";
  }catch(e){console.error("Automatic exercise creation failed:",e);generationWarning="הציוד נוסף, אך יצירת התרגילים האוטומטית נכשלה."}
+ await writeAudit(db,{action:"equipment.created",entityType:"equipment",entityId:equipment.id,label:equipment.name_he,metadata:{category:equipment.category,quantity:equipment.quantity}});
  return NextResponse.json({...equipment,generatedCount,generationSource,generationWarning});
 }
-export async function PATCH(req){if(!isAdmin(req))return NextResponse.json({error:"PIN שגוי"},{status:401});const db=supabaseAdmin();if(!db)return NextResponse.json({error:"Supabase עדיין לא מחובר"},{status:503});const b=await req.json(),id=b.id;delete b.id;const allowed={};for(const k of["quantity","active","details","name_he","name_en","category"])if(k in b)allowed[k]=b[k];const{data,error}=await db.from("equipment").update(allowed).eq("id",id).select().single();if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json(data)}
-export async function DELETE(req){if(!isAdmin(req))return NextResponse.json({error:"PIN שגוי"},{status:401});const db=supabaseAdmin();if(!db)return NextResponse.json({error:"Supabase עדיין לא מחובר"},{status:503});const{id}=await req.json();const{error}=await db.from("equipment").delete().eq("id",id);if(error)return NextResponse.json({error:error.message},{status:500});return NextResponse.json({ok:true})}
+export async function PATCH(req){if(!isAdmin(req))return NextResponse.json({error:"PIN שגוי"},{status:401});const db=supabaseAdmin();if(!db)return NextResponse.json({error:"Supabase עדיין לא מחובר"},{status:503});const b=await req.json(),id=b.id;delete b.id;const allowed={};for(const k of["quantity","active","details","name_he","name_en","category"])if(k in b)allowed[k]=b[k];const{data,error}=await db.from("equipment").update(allowed).eq("id",id).select().single();if(error)return NextResponse.json({error:error.message},{status:500});await writeAudit(db,{action:"equipment.updated",entityType:"equipment",entityId:data.id,label:data.name_he,metadata:{category:data.category,quantity:data.quantity,status:data.active?"active":"inactive"}});return NextResponse.json(data)}
+export async function DELETE(req){if(!isAdmin(req))return NextResponse.json({error:"PIN שגוי"},{status:401});const db=supabaseAdmin();if(!db)return NextResponse.json({error:"Supabase עדיין לא מחובר"},{status:503});const{id}=await req.json();const{data:existing}=await db.from("equipment").select("id,name_he,category,quantity").eq("id",id).maybeSingle();const{error}=await db.from("equipment").delete().eq("id",id);if(error)return NextResponse.json({error:error.message},{status:500});await writeAudit(db,{action:"equipment.deleted",entityType:"equipment",entityId:id,label:existing?.name_he||"פריט ציוד",metadata:{category:existing?.category,quantity:existing?.quantity}});return NextResponse.json({ok:true})}
+
 
