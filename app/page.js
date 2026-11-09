@@ -6,6 +6,7 @@ import exercisesSeed from "../data/exercises.json";
 import {availableExerciseEquipment,equipmentCapacity as familyCapacity,exerciseEquipmentLabel,EQUIPMENT_CATEGORY_OPTIONS} from "../lib/equipment-families";
 import ContinuityPanel from "./continuity/ContinuityPanel";
 import TeamPanel from "./team/TeamPanel";
+import SaveWorkoutPanel from "./continuity/SaveWorkoutPanel";
 
 const structures=["תחנות","סטים וחזרות","סופר סט / Super Fit","AMRAP","EMOM","פירמידה"];
 const levels=["מתחילים","בינוניים","מתקדמים","מעורב"];
@@ -277,6 +278,7 @@ async function addEquipment(e){
 
   {tab==="continuity"&&<ContinuityPanel/>}
   {tab==="team"&&<TeamPanel/>}
+  {tab==="workout"&&workout&&<section className="panel save-workout-shell"><SaveWorkoutPanel workout={workout}/></section>}
 
   {tab==="builder"&&<section className="panel hero-panel v26-builder-panel"><h2>בניית אימון</h2><div className="sub">בחרו סוג אימון. המערכת מתאימה את הקצב לרמה ומתחשבת במלאי ובקיבולת התחנות.</div><div className="v29-workout-types">{workoutTypes.map(type=><button type="button" key={type.id} className={`v29-workout-type ${workoutType===type.id?"selected":""}`} onClick={()=>{setWorkoutType(type.id);if(type.id==="functional-hiit")setStructure("תחנות")}}><strong>{type.label}</strong><span>{type.description}</span></button>)}</div><div className="filters"><MultiChoice label="אזורי גוף — ניתן לבחור כמה" options={allRegions} selected={regions} onChange={setRegions}/><MultiChoice label="משפחות ציוד — ניתן לבחור כמה" options={allEquipment} selected={equipments} onChange={setEquipments}/>{workoutType==="classic"&&<label className="field">מבנה<select value={structure} onChange={e=>setStructure(e.target.value)}>{structures.map(x=><option key={x}>{x}</option>)}</select></label>}<label className="field">רמה<select value={level} onChange={e=>setLevel(e.target.value)}>{levels.map(x=><option key={x}>{x}</option>)}</select></label><label className="field">משתתפות<input type="number" min="1" max="40" value={people} onChange={e=>setPeople(+e.target.value)}/></label><label className="field">משך בדקות<input type="number" min="20" max="90" value={minutes} onChange={e=>setMinutes(+e.target.value)}/></label></div><div className="safe" style={{marginTop:14}}>
 <strong>התאמות למגבלה / כאב שדווח מראש</strong>
