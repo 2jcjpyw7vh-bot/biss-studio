@@ -1,1 +1,2 @@
-{"name":"biss-studio-workout","version":"2.0.0","private":true,"scripts":{"dev":"next dev","build":"next build","start":"next start"},"dependencies":{"@supabase/supabase-js":"^2.0.0","next":"^15.0.0","react":"^19.0.0","react-dom":"^19.0.0"}}
+{"name":"biss-studio-workout","version":"2.9.0","private":true,"type":"module","scripts":{"dev":"next dev","build":"next build","start":"next start","test":"node --test"},"dependencies":{"@supabase/supabase-js":"^2.0.0","next":"^15.0.0","react":"^19.0.0","react-dom":"^19.0.0"}}
+

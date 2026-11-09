@@ -3,9 +3,15 @@ import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import equipmentSeed from "../data/equipment.json";
 import exercisesSeed from "../data/exercises.json";
+import {availableExerciseEquipment,equipmentCapacity as familyCapacity,exerciseEquipmentLabel,EQUIPMENT_CATEGORY_OPTIONS} from "../lib/equipment-families";
 
 const structures=["תחנות","סטים וחזרות","סופר סט / Super Fit","AMRAP","EMOM","פירמידה"];
 const levels=["מתחילים","בינוניים","מתקדמים","מעורב"];
+const workoutTypes=[
+  {id:"classic",label:"אימון סטודיו",description:"אימון כללי לפי האזורים, המבנה והציוד שנבחרו."},
+  {id:"functional",label:"Functional Training",description:"כוח, יציבות ותנועה רב־מפרקית בקצב נשלט."},
+  {id:"functional-hiit",label:"Functional HIIT",description:"אינטרוולים פונקציונליים עם התאמת עבודה ומנוחה לרמה."}
+];
 const goals=["חיזוק","אירובי","מוביליטי","שחרור","יציבות"];
 const limitationProfiles=[
   {id:"lowerBack",label:"גב תחתון"},
@@ -34,6 +40,7 @@ export default function Home(){
  const [tab,setTab]=useState("builder");
  const [regions,setRegions]=useState([]),[equipments,setEquipments]=useState([]),[q,setQ]=useState("");
  const [people,setPeople]=useState(12),[minutes,setMinutes]=useState(50),[level,setLevel]=useState("מעורב"),[structure,setStructure]=useState("תחנות");
+ const [workoutType,setWorkoutType]=useState("classic");
  const [musicUrl,setMusicUrl]=useState(""),[musicTitle,setMusicTitle]=useState("");
  const [workout,setWorkout]=useState(null),[program,setProgram]=useState(null),[homework,setHomework]=useState(null);
  const [inventory,setInventory]=useState(equipmentSeed),[pin,setPin]=useState(""),[adminMsg,setAdminMsg]=useState("");
@@ -56,13 +63,11 @@ export default function Home(){
 
  const allRegions=useMemo(()=>["הכל",...Array.from(new Set(exerciseLibrary.map(x=>x.region).filter(Boolean)))],[exerciseLibrary]);
  const allEquipment=useMemo(()=>{
-   const fromExercises=exerciseLibrary.map(x=>x.equipment).filter(Boolean);
-   const fromInventory=inventory.filter(x=>x.active!==false).map(x=>x.name_he).filter(Boolean);
-   return ["הכל","ללא ציוד",...Array.from(new Set([...fromExercises,...fromInventory].filter(x=>x!=="ללא ציוד")))];
+   return ["הכל",...availableExerciseEquipment(exerciseLibrary,inventory)];
  },[exerciseLibrary,inventory]);
 
  const matchesRegion=x=>regions.length===0||regions.includes(x.region);
- const matchesEquipment=x=>equipments.length===0||equipments.includes(x.equipment);
+ const matchesEquipment=x=>equipments.length===0||equipments.includes(x.equipment)||equipments.includes(exerciseEquipmentLabel(x.equipment,inventory));
  const regionLabel=regions.length?regions.join(" + "):"כל הגוף";
  const equipmentLabel=equipments.length?equipments.join(" + "):"כל הציוד";
 
@@ -72,12 +77,7 @@ export default function Home(){
  }),[exerciseLibrary,regions,equipments,q]);
 
  function equipmentCapacity(label){
-   if(label==="ללא ציוד")return 999;
-   const aliases={"קטלבל":"קטלבל 4–8 ק״ג","גומיות ירכיים":"גומיות ירכיים","גומיות התנגדות":"גומיות התנגדות","גומיות עם ידיות":"גומיות עם ידיות","כדורי פיזיו":"כדורי פיזיו","גלילי פילאטיס":"גלילי פילאטיס","מזרני פילאטיס":"מזרני פילאטיס","מדרגה":"מדרגה","בוסו":"בוסו","פיתה שיווי משקל":"פיתה שיווי משקל","קוביות פילאטיס":"קוביות פילאטיס","כדורי משקולת 1 ק״ג":"כדורי משקולת 1 ק״ג","אוברבול":"אוברבול","בר":"בר קבוע בסטודיו","נקודת עגינה רצפתית":"נקודת עיגון לגומיות - רצפה","נקודת עגינה גובה מותן":"נקודת עיגון לגומיות - גובה מותן"};
-   if(label==="משקולות יד")return inventory.filter(x=>x.category==="dumbbells"&&x.active!==false).reduce((sum,x)=>sum+Number(x.quantity||0),0);
-   const target=aliases[label]||label;
-   const item=inventory.find(x=>x.name_he===target||x.name_he===label);
-   return item?.active===false?0:(item?Number(item.quantity??0):999);
+   return familyCapacity(label,inventory);
  }
  function antagonistInfo(x){
    if(x.antagonist_group){
@@ -103,7 +103,7 @@ export default function Home(){
    const chosen=[],used=new Set();
    const add=x=>{if(x&&!used.has(x.id)){chosen.push(x);used.add(x.id)}};
    for(const eq of equipments){
-     add(rand(pool.filter(x=>x.equipment===eq&&!used.has(x.id)))[0]);
+     add(rand(pool.filter(x=>(x.equipment===eq||exerciseEquipmentLabel(x.equipment,inventory)===eq)&&!used.has(x.id)))[0]);
      if(chosen.length>=count)return chosen.slice(0,count);
    }
    for(const bodyRegion of regions){
@@ -130,6 +130,12 @@ export default function Home(){
    return pairs.flatMap((pair,pairIndex)=>pair.map((x,itemIndex)=>({...x,supersetGroup:pairIndex+1,supersetSlot:itemIndex===0?"A":"B"})));
  }
  function prescription(i){
+   if(workoutType==="functional-hiit"){
+     if(level==="מתחילים")return `30 שנ׳ עבודה · 30 שנ׳ מנוחה · 3 סבבים`;
+     if(level==="מתקדמים")return `45 שנ׳ עבודה · 15 שנ׳ מנוחה · 4 סבבים`;
+     return `40 שנ׳ עבודה · 20 שנ׳ מנוחה · 3–4 סבבים`;
+   }
+   if(workoutType==="functional")return level==="מתחילים"?`8–10 חזרות נשלטות · 2–3 סטים`:`10–12 חזרות · 3 סטים · 30–45 שנ׳ מנוחה`;
    if(structure==="סטים וחזרות")return `${i%2?10:12} חזרות × 3 סטים · 30–45 שנ׳ מנוחה`;
    if(structure==="סופר סט / Super Fit")return `8–12 חזרות · מעבר ישיר לתרגיל הנגדי · 60–90 שנ׳ מנוחה אחרי הזוג`;
    if(structure==="AMRAP")return `8–12 חזרות · כחלק מ-AMRAP של 10–14 דקות`;
@@ -161,7 +167,7 @@ export default function Home(){
      if(a.id===x.id || exerciseIssues(a).length) return false;
      const sameGoal=a.goal===x.goal;
      const sameRegion=a.region===x.region;
-     const available=equipments.length===0 || equipments.includes(a.equipment) || a.equipment==="ללא ציוד";
+     const available=equipments.length===0 || equipments.includes(a.equipment) || equipments.includes(exerciseEquipmentLabel(a.equipment,inventory)) || a.equipment==="ללא ציוד";
      return sameGoal && sameRegion && available;
    });
    const fallback=exerciseLibrary.filter(a=>a.id!==x.id && !exerciseIssues(a).length && a.goal===x.goal && a.equipment==="ללא ציוד");
@@ -177,12 +183,19 @@ export default function Home(){
    if(pool.length<5)pool=exerciseLibrary.filter(x=>matchesRegion(x)&&matchesEquipment(x)&&!["שחרור","מוביליטי","מתיחות"].includes(x.goal));
    if(level!=="מעורב"){const leveled=pool.filter(x=>x.level===level);if(leveled.length>=4)pool=leveled}
    if(!pool.length)pool=exerciseLibrary.filter(x=>matchesRegion(x)&&x.goal==="חיזוק");
-   const targetCount=Math.min(structure==="תחנות"?8:6,pool.length);
+   if(workoutType!=="classic"){
+     const functionalPatterns=["squat","lunge","hinge","push","pull","carry","rotation","plank","step","single leg","balance"];
+     const functional=pool.filter(x=>functionalPatterns.some(pattern=>(x.pattern||"").toLowerCase().includes(pattern))||["חיזוק","יציבות","אירובי"].includes(x.goal));
+     if(functional.length>=5)pool=functional;
+   }
+   const targetCount=Math.min(workoutType==="functional-hiit"?8:(structure==="תחנות"?8:6),pool.length);
    const chosen=structure==="סופר סט / Super Fit"
      ? buildSupersetSelection(pool)
      : buildBalancedSelection(pool,targetCount);
-   const stations=chosen.map((x,i)=>{const cap=equipmentCapacity(x.equipment);return {...x,prescription:x.supersetGroup?`${x.supersetSlot}${x.supersetGroup} · ${prescription(i)}`:prescription(i),allocation:cap<people?`יש ${cap} יח׳ לכ-${people} משתתפות — לעבוד בזוגות/רוטציה או להשתמש בחלופה.`:""}});
-   setAlternatives({}); setWorkout({title:regions.length?`BISS · ${regionLabel}`:"BISS Full Body",meta:`${minutes} דק׳ · ${people} משתתפות · ${structure} · ${level} · ${equipmentLabel}`,limitations:[...limitations],limitationLabels:limitationProfiles.filter(p=>limitations.includes(p.id)).map(p=>p.label),limitationNote,musicUrl:normalizeUrl(musicUrl),musicTitle:musicTitle||"מוזיקה לאימון",warm:["2 דק׳ העלאת דופק הדרגתית","2–3 דק׳ מוביליטי למפרקים הרלוונטיים","2 דק׳ חזרה טכנית על דפוסי התנועה המרכזיים"],exercises:stations,cool:["2 דק׳ הורדת דופק ונשימה","3–5 דק׳ מתיחות/מוביליטי עדינים לפי האזורים שעבדו"]});
+   const stations=chosen.map((x,i)=>{const cap=equipmentCapacity(x.equipment);return {...x,prescription:x.supersetGroup?`${x.supersetSlot}${x.supersetGroup} · ${prescription(i)}`:prescription(i),allocation:Number.isFinite(cap)&&cap<people?`יש ${cap} יח׳ ממשפחת ${exerciseEquipmentLabel(x.equipment,inventory)} לכ-${people} משתתפות — לעבוד בזוגות/רוטציה או להשתמש בחלופה.`:""}});
+   const type=workoutTypes.find(x=>x.id===workoutType);
+   const warm=workoutType==="functional-hiit"?["3 דק׳ העלאת דופק הדרגתית","3 דק׳ מוביליטי דינמי","סבב הכנה טכני בקצב קל"]:["2 דק׳ העלאת דופק הדרגתית","2–3 דק׳ מוביליטי למפרקים הרלוונטיים","2 דק׳ חזרה טכנית על דפוסי התנועה המרכזיים"];
+   setAlternatives({}); setWorkout({title:`BISS · ${type.label}${regions.length?` · ${regionLabel}`:""}`,meta:`${minutes} דק׳ · ${people} משתתפות · ${workoutType==="classic"?structure:"תחנות"} · ${level} · ${equipmentLabel}`,limitations:[...limitations],limitationLabels:limitationProfiles.filter(p=>limitations.includes(p.id)).map(p=>p.label),limitationNote,musicUrl:normalizeUrl(musicUrl),musicTitle:musicTitle||"מוזיקה לאימון",warm,exercises:stations,cool:["2 דק׳ הורדת דופק ונשימה","3–5 דק׳ מתיחות/מוביליטי עדינים לפי האזורים שעבדו"]});
    setTab("workout");
  }
  function buildHomework(){
@@ -259,7 +272,7 @@ async function addEquipment(e){
   <header className="hero v26-main-hero"><div className="brand"><img className="logo" src="/biss-logo.png" alt="BISS"/><div><div className="eyebrow">BISS STUDIO SYSTEM</div><h1>אימון מדויק. פשוט להפעלה.</h1><div className="sub">בנייה, חיפוש, שיתוף ושיעורי בית — במקום אחד.</div></div></div><div className="top-note small">בנוי לצוות הסטודיו: מהיר בטלפון, ברור בזמן שיעור, ומותאם למלאי הציוד.</div></header>
   <nav className="tabs v26-tabs">{[["builder","בניית אימון"],["exercises","תרגילים"],["homework","שיעורי בית"],["program","תוכנית"],["equipment","ציוד"]].map(([id,label])=><button key={id} className={tab===id?"active":""} onClick={()=>{setTab(id);if(id==="equipment")refreshInventory()}}>{label}</button>)}{workout&&<button className={tab==="workout"?"active":""} onClick={()=>setTab("workout")}>האימון שלי</button>}</nav>
 
-  {tab==="builder"&&<section className="panel hero-panel v26-builder-panel"><h2>בניית אימון</h2><div className="sub">בחרו מטרה בסיסית. המערכת מתחשבת במלאי ומסמנת מתי נדרשת עבודה בזוגות או רוטציה.</div><div className="filters"><MultiChoice label="אזורי גוף — ניתן לבחור כמה" options={allRegions} selected={regions} onChange={setRegions}/><MultiChoice label="ציוד — ניתן לבחור כמה" options={allEquipment} selected={equipments} onChange={setEquipments}/><label className="field">מבנה<select value={structure} onChange={e=>setStructure(e.target.value)}>{structures.map(x=><option key={x}>{x}</option>)}</select></label><label className="field">רמה<select value={level} onChange={e=>setLevel(e.target.value)}>{levels.map(x=><option key={x}>{x}</option>)}</select></label><label className="field">משתתפות<input type="number" min="1" max="40" value={people} onChange={e=>setPeople(+e.target.value)}/></label><label className="field">משך בדקות<input type="number" min="20" max="90" value={minutes} onChange={e=>setMinutes(+e.target.value)}/></label></div><div className="safe" style={{marginTop:14}}>
+  {tab==="builder"&&<section className="panel hero-panel v26-builder-panel"><h2>בניית אימון</h2><div className="sub">בחרו סוג אימון. המערכת מתאימה את הקצב לרמה ומתחשבת במלאי ובקיבולת התחנות.</div><div className="v29-workout-types">{workoutTypes.map(type=><button type="button" key={type.id} className={`v29-workout-type ${workoutType===type.id?"selected":""}`} onClick={()=>{setWorkoutType(type.id);if(type.id==="functional-hiit")setStructure("תחנות")}}><strong>{type.label}</strong><span>{type.description}</span></button>)}</div><div className="filters"><MultiChoice label="אזורי גוף — ניתן לבחור כמה" options={allRegions} selected={regions} onChange={setRegions}/><MultiChoice label="משפחות ציוד — ניתן לבחור כמה" options={allEquipment} selected={equipments} onChange={setEquipments}/>{workoutType==="classic"&&<label className="field">מבנה<select value={structure} onChange={e=>setStructure(e.target.value)}>{structures.map(x=><option key={x}>{x}</option>)}</select></label>}<label className="field">רמה<select value={level} onChange={e=>setLevel(e.target.value)}>{levels.map(x=><option key={x}>{x}</option>)}</select></label><label className="field">משתתפות<input type="number" min="1" max="40" value={people} onChange={e=>setPeople(+e.target.value)}/></label><label className="field">משך בדקות<input type="number" min="20" max="90" value={minutes} onChange={e=>setMinutes(+e.target.value)}/></label></div><div className="safe" style={{marginTop:14}}>
 <strong>התאמות למגבלה / כאב שדווח מראש</strong>
 <div className="small">אפשר לבחור יותר מאפשרות אחת. המערכת לא מאבחנת; היא רק מסמנת תרגילים לבדיקה ומציעה חלופה.</div>
 <div className="row" style={{marginTop:10}}>{limitationProfiles.map(p=><button type="button" key={p.id} className={`btn ${limitations.includes(p.id)?"active-limit":""}`} onClick={()=>toggleLimitation(p.id)}>{p.label}</button>)}</div>
@@ -279,7 +292,7 @@ async function addEquipment(e){
   {tab==="homeworkResult"&&homework&&<section className="panel"><h2>{homework.title}</h2><div className="sub">{homework.meta}</div>{homework.musicUrl&&<div className="music">🎧 <a href={homework.musicUrl} target="_blank" rel="noreferrer">פתחי ב-Spotify · {homework.musicTitle}</a></div>}{homework.note&&<div className="safe" style={{margin:"12px 0"}}>הערת המדריכה: {homework.note}</div>}{homework.items.map((x,i)=><div className="workout-item v24-workout-item" key={x.id}><strong>{i+1}. {x.he}</strong><div>{x.prescription}</div><div className="small">{x.cue}</div><div style={{marginTop:7}}><Link className="btn" href={`/exercise/${x.id}`}>פתח תרגיל</Link></div></div>)}<ShareButtons type="homework" payload={homework}/></section>}
   {tab==="programResult"&&program&&<section className="panel"><h2>{program.title}</h2><div className="sub">{program.meta}</div>{program.musicUrl&&<div className="music">🎧 <a href={program.musicUrl} target="_blank" rel="noreferrer">פתחי ב-Spotify · {program.musicTitle}</a></div>}{program.sessions.map((s,i)=><div className="card" style={{marginTop:10}} key={i}><h3>{s.name}</h3><div className="small">התקדמות: {s.progression}</div>{s.items.map((x,j)=><div className="workout-item v24-workout-item" key={x.id+j}><strong>{x.he}</strong> · {x.prescription}</div>)}</div>)}<ShareButtons type="program" payload={program}/></section>}
 
-  {tab==="equipment"&&<section className="panel"><div className="row between"><div><h2>מלאי הסטודיו</h2><div className="sub">הכמויות משמשות את מנגנון חלוקת התחנות.</div></div><div className="kpi">{inventory.reduce((s,x)=>s+(x.active===false?0:x.quantity),0)}</div></div><div className="grid">{inventory.map((x,i)=><article className={`card inventory-card ${x.active===false?"unavailable":""}`} key={x.id||i}><h3>{x.name_he}</h3><div className="small">{x.name_en}</div><p><strong>{x.quantity}</strong> יחידות {x.active===false&&"· לא זמין כרגע"}</p>{x.details&&<div className="small">{x.details}</div>}{x.id&&<div className="row" style={{marginTop:10}}><button className="btn" onClick={()=>changeQty(x,-1)}>−</button><button className="btn" onClick={()=>changeQty(x,1)}>+</button><button className="btn" onClick={()=>toggleItem(x)}>{x.active===false?"החזרה לזמין":"לא זמין"}</button><button className="btn red" onClick={()=>deleteItem(x)}>מחיקה</button></div>}</article>)}</div><div className="admin"><h3>ניהול ציוד</h3><div className="small">פעולות שינוי דורשות PIN מנהל. בהוספת ציוד חדש המערכת יוצרת אוטומטית תרגילים, מחברת סרטוני הדגמה ומשלבת אותם בספרייה ובמחולל האימונים.</div><div className="filters"><label className="field">PIN<input type="password" value={pin} onChange={e=>setPin(e.target.value)} placeholder="PIN מנהל"/></label></div><form className="filters" onSubmit={addEquipment}><input name="name" required placeholder="שם הציוד בעברית"/><input name="nameEn" placeholder="שם באנגלית"/><input name="quantity" type="number" min="0" required placeholder="כמות"/><input name="category" placeholder="קטגוריה"/><input name="details" placeholder="פרטים / משקל"/><button
+  {tab==="equipment"&&<section className="panel"><div className="row between"><div><h2>מלאי הסטודיו</h2><div className="sub">הכמויות מתחברות לפי משפחת ציוד ומשמשות את מנגנון חלוקת התחנות.</div></div><div className="kpi">{inventory.reduce((s,x)=>s+(x.active===false?0:x.quantity),0)}</div></div><div className="grid">{inventory.map((x,i)=><article className={`card inventory-card ${x.active===false?"unavailable":""}`} key={x.id||i}><h3>{x.name_he}</h3><div className="small">{x.name_en}</div><p><strong>{x.quantity}</strong> יחידות {x.active===false&&"· לא זמין כרגע"}</p><div className="tag">{EQUIPMENT_CATEGORY_OPTIONS.find(c=>c.value===x.category)?.label||"אחר"}</div>{x.details&&<div className="small">{x.details}</div>}{x.id&&<div className="row" style={{marginTop:10}}><button className="btn" onClick={()=>changeQty(x,-1)}>−</button><button className="btn" onClick={()=>changeQty(x,1)}>+</button><button className="btn" onClick={()=>toggleItem(x)}>{x.active===false?"החזרה לזמין":"לא זמין"}</button><button className="btn red" onClick={()=>deleteItem(x)}>מחיקה</button></div>}</article>)}</div><div className="admin"><h3>ניהול ציוד</h3><div className="small">פעולות שינוי דורשות PIN מנהל. יש לבחור משפחה מסודרת כדי שמשקלים שונים ייספרו יחד ולא ייצרו אפשרויות כפולות.</div><div className="filters"><label className="field">PIN<input type="password" value={pin} onChange={e=>setPin(e.target.value)} placeholder="PIN מנהל"/></label></div><form className="filters" onSubmit={addEquipment}><input name="name" required placeholder="שם הציוד בעברית"/><input name="nameEn" placeholder="שם באנגלית"/><input name="quantity" type="number" min="0" required placeholder="כמות"/><select name="category" defaultValue="other" aria-label="משפחת ציוד">{EQUIPMENT_CATEGORY_OPTIONS.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select><input name="details" placeholder="פרטים / משקל"/><button
   className="btn primary"
   type="submit"
   disabled={savingEquipment}
@@ -293,8 +306,10 @@ async function addEquipment(e){
     .v28-choice:hover{border-color:#a9cdb7}
     .v28-choice.selected{background:#17201b;color:#fff;border-color:#17201b;box-shadow:0 5px 14px rgba(23,32,27,.12)}
     .v28-multi-choice .v28-choice:first-child.selected{background:#238456;border-color:#238456}
-    @media(max-width:760px){.v28-multi-field{grid-column:1/-1}.v28-multi-choice{max-height:190px;overflow:auto}.v28-choice{padding:9px 11px}}
+    .v29-workout-types{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.v29-workout-type{display:flex;flex-direction:column;gap:5px;text-align:right;padding:15px;border:1px solid #dce4de;border-radius:18px;background:#fff;cursor:pointer;color:#455048}.v29-workout-type strong{font-size:15px}.v29-workout-type span{font-size:12px;line-height:1.5}.v29-workout-type.selected{background:#17201b;color:#fff;border-color:#17201b;box-shadow:0 8px 22px rgba(23,32,27,.13)}
+    @media(max-width:760px){.v29-workout-types{grid-template-columns:1fr}.v28-multi-field{grid-column:1/-1}.v28-multi-choice{max-height:190px;overflow:auto}.v28-choice{padding:9px 11px}}
   `}</style>
-  <footer className="footer">BISS · מערכת עבודה פנימית לסטודיו · V2.8.1</footer>
+  <footer className="footer">BISS · מערכת עבודה פנימית לסטודיו · V2.9.0</footer>
  </main>
 }
+
