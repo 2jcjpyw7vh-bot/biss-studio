@@ -5,6 +5,7 @@
 
 .active-limit{outline:2px solid currentColor;box-shadow:0 0 0 2px rgba(0,0,0,.05) inset}
 .audit-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-top:18px}.audit-heading .section-title{margin-bottom:4px}.audit-filter{min-width:180px}.audit-list{display:grid;gap:8px;margin-top:12px}.audit-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 15px;border:1px solid var(--line);border-radius:15px;background:#fbfcfb}.audit-row time{color:var(--muted);font-size:12px;white-space:nowrap}
+.user-permission-card{display:grid;gap:10px}.permission-check{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.4}.permission-check input{width:18px;height:18px;margin:0;flex:0 0 auto}
 @media(max-width:640px){.audit-heading{align-items:stretch;flex-direction:column}.audit-filter{min-width:0}.audit-row{align-items:flex-start;flex-direction:column}.audit-row time{white-space:normal}}
 
 /* V2.2 exercise detail pages */
