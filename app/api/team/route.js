@@ -11,6 +11,15 @@ async function snapshot(db){const [users,sessions,groups,offers,audit]=await Pro
 export async function GET(req){if(!admin(req))return reply({error:"נדרש PIN מנהל"},401);const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);try{return reply(await snapshot(db))}catch{return reply({error:"לא ניתן לטעון את הצוות"},503)}}
 export async function POST(req){if(!admin(req))return reply({error:"PIN שגוי"},401);const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);const b=await req.json();try{
  if(b.action==="user"){const full_name=clean(b.full_name,120),role=clean(b.role,20);if(!full_name||!["manager","instructor","trainee"].includes(role))return reply({error:"חסר שם או תפקיד"},400);const{data:user,error}=await db.from("biss_users").insert({full_name,email:clean(b.email,180).toLowerCase(),phone:clean(b.phone,40),role,status:"active",can_view_health:role==="manager"||b.can_view_health===true}).select("id").single();if(error)throw error;await writeAudit(db,{action:"user.created",entityType:"user",entityId:user.id,label:full_name,metadata:{role}})}
+ else if(b.action==="user_update"){
+  const id=clean(b.id,120),role=clean(b.role,20),status=clean(b.status,20);
+  if(!id||!["manager","instructor","trainee"].includes(role)||!["active","inactive"].includes(status))return reply({error:"פרטי ההרשאה אינם תקינים"},400);
+  const{data:current,error:currentError}=await db.from("biss_users").select("id,full_name,role,status").eq("id",id).single();if(currentError||!current)return reply({error:"המשתמשת לא נמצאה"},404);
+  if(current.role==="manager"&&current.status==="active"&&(role!=="manager"||status!=="active")){const{count,error:countError}=await db.from("biss_users").select("id",{count:"exact",head:true}).eq("role","manager").eq("status","active");if(countError)throw countError;if((count||0)<=1)return reply({error:"לא ניתן להשבית את המנהלת הפעילה האחרונה"},409)}
+  const can_view_health=role==="manager"||(role==="instructor"&&String(b.can_view_health)==="true");
+  const{error}=await db.from("biss_users").update({role,status,can_view_health}).eq("id",id);if(error)throw error;
+  await writeAudit(db,{action:"user.updated",entityType:"user",entityId:id,label:current.full_name,metadata:{role,status}})
+ }
  else if(b.action==="offer"){if(!b.session_id||!b.instructor_id)return reply({error:"יש לבחור אימון ומדריכה"},400);const{data:offer,error}=await db.from("biss_substitute_offers").upsert({session_id:b.session_id,instructor_id:b.instructor_id,status:"pending",message:clean(b.message,1200),responded_at:null},{onConflict:"session_id,instructor_id"}).select("id,token").single();if(error)throw error;await writeAudit(db,{action:"substitute_offer.created",entityType:"offer",entityId:offer.id,label:"הצעת החלפה",metadata:{status:"pending"}});const base=(process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000").replace(/\/$/,"");return reply({...await snapshot(db),share_url:`${base}/substitute/${offer.token}`})}
  else return reply({error:"פעולה לא מוכרת"},400);return reply(await snapshot(db));
  }catch(error){console.error("Studio team error",error);return reply({error:"השמירה נכשלה"},500)}}
