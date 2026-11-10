@@ -3,6 +3,7 @@ import {notFound} from "next/navigation";
 import exercisesSeed from "../../../data/exercises.json";
 import {supabaseAdmin} from "../../../lib/supabase";
 import ExerciseActions from "../ExerciseActions";
+import WorkoutBackLink from "../WorkoutBackLink";
 import ExerciseMedia from "./ExerciseMedia";
 import {BONE_EXERCISES,BONE_NOTICE} from "../../../lib/bone-strength";
 
@@ -38,7 +39,7 @@ export default async function ExercisePage({params,searchParams}){
   return <main className="exercise-page v26-exercise-page">
     <header className="v26-exercise-nav">
       <Link href="/" className="v26-brand-link" aria-label="BISS"><img src="/biss-logo.png" alt="BISS"/></Link>
-      <Link className="btn v26-back-btn" href={fromWorkout?"/?tab=workout":"/?tab=exercises"}>{fromWorkout?"← חזרה לאימון":"← חזרה לספרייה"}</Link>
+      {fromWorkout?<WorkoutBackLink exerciseId={id}/>:<Link className="btn v26-back-btn" href="/?tab=exercises">← חזרה לספרייה</Link>}
     </header>
     <section className="v26-exercise-hero">
       {x.demoUrl?<div className="v26-media"><strong>הדגמה מקצועית</strong><p>Royal Osteoporosis Society</p><a href={x.demoUrl} className="btn" target="_blank" rel="noreferrer">{x.demoLabel} ↗</a><p className="small">{BONE_NOTICE}</p></div>:<ExerciseMedia exercise={x} youtube={youtube}/>}
