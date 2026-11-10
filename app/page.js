@@ -10,6 +10,7 @@ import {BARRE_TYPE,BARRE_EQUIPMENT,BARRE_MAX_PARTICIPANTS,BARRE_STRUCTURES,BARRE
 import ContinuityPanel from "./continuity/ContinuityPanel";
 import TeamPanel from "./team/TeamPanel";
 import SaveWorkoutPanel from "./continuity/SaveWorkoutPanel";
+import SavePersonalWorkout from "./continuity/SavePersonalWorkout";
 import ArboxPanel from "./integrations/ArboxPanel";
 import SaveProgramPanel from "./programs/SaveProgramPanel";
 import {rememberWorkout,workoutDraft} from "./workout-navigation";
@@ -72,6 +73,7 @@ export default function Home(){
    const requested=new URLSearchParams(window.location.search).get("tab");
    if(requested==="exercises")setTab("exercises");
    if(requested==="equipment")setTab("equipment");
+   if(requested==="integrations")setTab("integrations");
    if(requested==="workout"){
      const draft=workoutDraft();
      if(draft){
@@ -241,6 +243,7 @@ export default function Home(){
    const type=workoutTypes.find(x=>x.id===workoutType);
    setAlternatives({});
    setWorkout({
+     saveId:crypto.randomUUID(),
      title:`BISS · ${type.label}${regions.length?` · ${regionLabel}`:""}`,
      meta:`${duration} דק׳ · ${participants} משתתפות · ${structure} · ${level} · ${equipment}`,
      limitations:[...limitations],limitationLabels:limitationProfiles.filter(p=>limitations.includes(p.id)).map(p=>p.label),limitationNote,
@@ -391,7 +394,7 @@ async function addEquipment(e){
   {tab==="continuity"&&<ContinuityPanel/>}
   {tab==="team"&&<TeamPanel draftWorkout={offerWorkout}/>}
   {tab==="integrations"&&<ArboxPanel/>}
-  {tab==="workout"&&workout&&<section className="panel save-workout-shell"><div className="row"><SaveWorkoutPanel workout={workout}/><button className="btn" onClick={()=>{setOfferWorkout(workout);setTab("team");}}>הציעי למחליפה</button></div></section>}
+  {tab==="workout"&&workout&&<section className="panel save-workout-shell"><div className="row"><SavePersonalWorkout key={workout.saveId} workout={workout}/><SaveWorkoutPanel workout={workout}/><button className="btn" onClick={()=>{setOfferWorkout(workout);setTab("team");}}>הציעי למחליפה</button></div></section>}
 
   {tab==="builder"&&<section className="panel hero-panel v26-builder-panel"><h2>בניית אימון</h2><div className="sub">בחרו סוג אימון. המערכת מתאימה את הקצב לרמה ומתחשבת במלאי ובקיבולת התחנות.</div><div className="v29-workout-types">{workoutTypes.map(type=><button type="button" key={type.id} className={`v29-workout-type ${workoutType===type.id?"selected":""}`} onClick={()=>selectWorkoutType(type.id)}><strong>{type.label}</strong><span>{type.description}</span></button>)}</div><div className="filters"><MultiChoice label="אזורי גוף — ניתן לבחור כמה" options={isBarre?barreRegions:allRegions} selected={regions} onChange={setRegions}/>{isBarre?<div className="field v28-multi-field">ציוד נדרש<strong>{BARRE_EQUIPMENT}</strong></div>:<MultiChoice label="משפחות ציוד — ניתן לבחור כמה" options={allEquipment} selected={equipments} onChange={setEquipments}/>}<details className="field v28-multi-field"><summary>פירוט הציוד והכמויות במלאי</summary><p className="small">משקולות יד וקטלבל נבחרים לפי משפחה. כאן מוצגים המשקלים והכמויות בפועל.</p><ul>{inventory.filter(item=>item.active!==false&&item.quantity>0).map(item=><li key={item.id||item.name_he}>{item.name_he} · {item.quantity}{item.name_he==="גלייד דיסק"?" זוגות":""}</li>)}</ul></details><label className="field">מבנה<select value={structure} onChange={e=>setStructure(e.target.value)}>{(isBarre?BARRE_STRUCTURES:workoutType===BONE_TYPE?boneStructures:STRUCTURES).map(x=><option key={x}>{x}</option>)}</select></label><label className="field">רמה<select value={level} onChange={e=>setLevel(e.target.value)}>{(workoutType===BONE_TYPE?levels.filter(x=>x!=="מתקדמים"):levels).map(x=><option key={x}>{x}</option>)}</select></label><label className="field">משתתפות<input type="number" min="1" max={isBarre?BARRE_MAX_PARTICIPANTS:40} aria-invalid={isBarre&&!validBarreSize} value={people} onChange={e=>setPeople(+e.target.value)}/></label><label className="field">משך בדקות<input type="number" min="20" max="90" value={minutes} onChange={e=>setMinutes(+e.target.value)}/></label></div><label className="permission-check"><input type="checkbox" checked={includeFinisher} onChange={e=>setIncludeFinisher(e.target.checked)}/> {workoutType===BONE_TYPE?"הוספת סיום קבוצתי בשיווי משקל":isBarre?"הוספת פינישר ליבה בעמידה":"הוספת פינישר ליבה קבוצתי"}</label>{workoutType===BONE_TYPE&&<p className="notice">{BONE_NOTICE} ברמת ״מעורב״ משתמשים בתרגילי הבסיס.</p>}{isBarre&&<p className="notice">{BARRE_NOTICE}{!barreAvailable&&" הבר אינו זמין כרגע במלאי."}{!validBarreSize&&" יש להזין מספר משתתפות בין 1 ל־7."}</p>}{!isBarre&&structure===BLOCKS&&<p className="small">עד ארבע תחנות בבלוק. בחירת פלג גוף אחד יוצרת בלוק ממוקד. בחירת שניהם יוצרת שני בלוקים.</p>}<div className="safe" style={{marginTop:14}}>
 <strong>התאמות למגבלה / כאב שדווח מראש</strong>

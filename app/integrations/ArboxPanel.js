@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "../../lib/supabase-browser";
 
@@ -28,6 +28,7 @@ export default function ArboxPanel() {
   const [schedule, setSchedule] = useState(null);
   const [scheduleError, setScheduleError] = useState("");
   const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [needsLogin, setNeedsLogin] = useState(false);
 
   const check = async (event) => {
     event.preventDefault();
@@ -49,15 +50,17 @@ export default function ArboxPanel() {
     }
   };
 
-  const loadSchedule = async () => {
+  const loadSchedule = useCallback(async () => {
     setLoadingSchedule(true);
     setSchedule(null);
     setScheduleError("");
+    setNeedsLogin(false);
     try {
       const client = supabaseBrowser();
       const auth = client ? await client.auth.getSession() : null;
       const token = auth?.data?.session?.access_token;
       if (!token) {
+        setNeedsLogin(true);
         setScheduleError("יש להיכנס עם החשבון האישי של מנהלת Studio.");
         return;
       }
@@ -67,13 +70,20 @@ export default function ArboxPanel() {
       });
       const result = await response.json();
       if (response.ok) setSchedule(result);
-      else setScheduleError(result.error || "טעינת הלוח נכשלה.");
+      else {
+        setNeedsLogin(response.status === 401 || response.status === 403);
+        setScheduleError(result.error || "טעינת הלוח נכשלה.");
+      }
     } catch {
       setScheduleError("טעינת הלוח נכשלה. אפשר לנסות שוב.");
     } finally {
       setLoadingSchedule(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadSchedule();
+  }, [loadSchedule]);
 
   return <section className="panel integration-panel">
     <div className="row between">
@@ -109,7 +119,7 @@ export default function ArboxPanel() {
       <p className="small">עד 20 שיעורים מהיום ובששת הימים הבאים. מוצגים פרטי השיעור ומספר הרשמות, ככל שארבוקס מספקת אותו.</p>
       <div className="row">
         <button className="btn primary" disabled={loadingSchedule} onClick={loadSchedule}>{loadingSchedule ? "טוען לוח…" : "הצגת לוח השבוע"}</button>
-        <Link className="btn" href="/login">כניסה אישית</Link>
+        {needsLogin && <Link className="btn" href="/login?next=arbox">כניסת מנהלת ללוח Arbox</Link>}
       </div>
       <div role="status">
         {scheduleError && <p className="notice">{scheduleError}</p>}
