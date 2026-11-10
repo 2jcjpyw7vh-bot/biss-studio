@@ -1,0 +1,9 @@
+import {NextResponse} from "next/server";
+import {supabaseAdmin} from "../../../../../lib/supabase";
+import {studioProfileFromRequest} from "../../../../../lib/studio-auth";
+import {selfServiceAccess} from "../../../../../lib/self-service-access";
+
+export const dynamic="force-dynamic";
+const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
+export async function GET(req,{params}){const{programId,sessionIndex}=await params,index=Number(sessionIndex);if(!Number.isInteger(index)||index<0)return reply({error:"אימון לא תקין"},400);const db=supabaseAdmin();if(!db)return reply({error:"שירות Studio אינו מחובר"},503);const{profile,error,status}=await studioProfileFromRequest(req,db);if(error)return reply({error},status);if(profile.role!=="trainee")return reply({error:"אזור זה מיועד למתאמנות"},403);const{data:program,error:programError}=await db.from("biss_programs").select("id,trainee_id,coach_id,title,summary,program_payload,equipment_access,status,approved_at,starts_on,ends_on").eq("id",programId).eq("trainee_id",profile.id).single();if(programError||!program)return reply({error:"התוכנית לא נמצאה"},404);const access=selfServiceAccess(profile,program);if(!access.equipment)return reply({error:"האימון אינו מאושר לשימוש במכשירים"},403);const sessions=Array.isArray(program.program_payload?.sessions)?program.program_payload.sessions:[],session=sessions[index];if(!session)return reply({error:"האימון לא נמצא בתוכנית"},404);return reply({program:{id:program.id,title:program.title,musicUrl:program.program_payload?.musicUrl||"",musicTitle:program.program_payload?.musicTitle||""},session:{name:String(session.name||"אימון"),progression:String(session.progression||""),items:Array.isArray(session.items)?session.items.slice(0,20):[]},session_index:index,total_sessions:sessions.length})}
+
