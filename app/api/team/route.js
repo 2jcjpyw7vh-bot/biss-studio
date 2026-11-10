@@ -2,17 +2,26 @@ import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {writeAudit} from "../../../lib/audit";
 import {verifyAdminPin} from "../../../lib/admin-pin";
+import {canAccessInstructorArea} from "../../../lib/studio-permissions";
 export const dynamic="force-dynamic";
 const clean=(v,n=300)=>String(v||"").trim().slice(0,n);
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 async function snapshot(db){const [users,sessions,groups,offers,audit]=await Promise.all([db.from("biss_users").select("*").order("full_name"),db.from("biss_sessions").select("*").order("starts_at",{ascending:false}).limit(80),db.from("biss_groups").select("id,name"),db.from("biss_substitute_offers").select("*").order("created_at",{ascending:false}).limit(100),db.from("biss_audit_log").select("id,action,entity_type,label,metadata,created_at").order("created_at",{ascending:false}).limit(30)]);const error=[users,sessions,groups,offers,audit].find(x=>x.error)?.error;if(error)throw error;return{users:users.data||[],sessions:sessions.data||[],groups:groups.data||[],offers:offers.data||[],audit:audit.data||[]}}
 export async function GET(req){if(!await verifyAdminPin(req))return reply({error:"נדרש PIN מנהל"},401);const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);try{return reply(await snapshot(db))}catch{return reply({error:"לא ניתן לטעון את הצוות"},503)}}
 export async function POST(req){if(!await verifyAdminPin(req))return reply({error:"PIN שגוי"},401);const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);const b=await req.json();try{
- if(b.action==="user"){const full_name=clean(b.full_name,120),role=clean(b.role,20);if(!full_name||!["manager","instructor","trainee"].includes(role))return reply({error:"חסר שם או תפקיד"},400);const{data:user,error}=await db.from("biss_users").insert({full_name,email:clean(b.email,180).toLowerCase(),phone:clean(b.phone,40),role,status:"active",can_view_health:role==="manager"||b.can_view_health===true}).select("id").single();if(error)throw error;await writeAudit(db,{action:"user.created",entityType:"user",entityId:user.id,label:full_name,metadata:{role}})}
+ if(b.action==="user"){
+  const full_name=clean(b.full_name,120),role=clean(b.role,20),email=clean(b.email,180).toLowerCase();
+  if(!full_name||!["manager","instructor","trainee"].includes(role))return reply({error:"חסר שם או תפקיד"},400);
+  const {data:user,error}=await db.from("biss_users").insert({full_name,email,phone:clean(b.phone,40),role,status:"active",can_view_health:role==="manager"||b.can_view_health===true}).select("id").single();
+  if(error?.code==="23505")return reply({error:"כתובת המייל כבר רשומה. השתמשו בחשבון הקיים. מנהלת פעילה זמינה גם לשיבוץ כמדריכה."},409);
+  if(error)throw error;
+  await writeAudit(db,{action:"user.created",entityType:"user",entityId:user.id,label:full_name,metadata:{role}})
+ }
  else if(b.action==="user_update"){
   const id=clean(b.id,120),role=clean(b.role,20),status=clean(b.status,20);
-  if(!id||!["manager","instructor","trainee"].includes(role)||!["active","inactive"].includes(status))return reply({error:"פרטי ההרשאה אינם תקינים"},400);
+  if(!id||!["manager","instructor","trainee"].includes(role)||!["active","inactive","invited"].includes(status))return reply({error:"פרטי ההרשאה אינם תקינים"},400);
   const{data:current,error:currentError}=await db.from("biss_users").select("id,full_name,role,status").eq("id",id).single();if(currentError||!current)return reply({error:"המשתמשת לא נמצאה"},404);
+  if(status==="invited"&&current.status!=="invited")return reply({error:"מצב הזמנה נקבע בעת ההזמנה"},400);
   if(current.role==="manager"&&current.status==="active"&&(role!=="manager"||status!=="active")){const{count,error:countError}=await db.from("biss_users").select("id",{count:"exact",head:true}).eq("role","manager").eq("status","active");if(countError)throw countError;if((count||0)<=1)return reply({error:"לא ניתן להשבית את המנהלת הפעילה האחרונה"},409)}
   const can_view_health=role==="manager"||(role==="instructor"&&String(b.can_view_health)==="true");
   const{error}=await db.from("biss_users").update({role,status,can_view_health}).eq("id",id);if(error)throw error;
@@ -25,7 +34,27 @@ export async function POST(req){if(!await verifyAdminPin(req))return reply({erro
   const{error:linkError}=await db.from("biss_users").update({auth_user_id:invited.user.id}).eq("id",id).is("auth_user_id",null);if(linkError)throw linkError;
   await writeAudit(db,{action:"user.invited",entityType:"user",entityId:id,label:person.full_name,metadata:{status:"invited"}})
  }
- else if(b.action==="offer"){if(!b.session_id||!b.instructor_id)return reply({error:"יש לבחור אימון ומדריכה"},400);const hours=[24,48,72].includes(Number(b.expires_hours))?Number(b.expires_hours):48,expires_at=new Date(Date.now()+hours*60*60*1000).toISOString();const{data:offer,error}=await db.from("biss_substitute_offers").upsert({session_id:b.session_id,instructor_id:b.instructor_id,status:"pending",message:clean(b.message,1200),show_workout:String(b.show_workout)==="true",expires_at,responded_at:null},{onConflict:"session_id,instructor_id"}).select("id,token").single();if(error)throw error;await writeAudit(db,{action:"substitute_offer.created",entityType:"offer",entityId:offer.id,label:"הצעת החלפה",metadata:{status:"pending"}});const base=(process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000").replace(/\/$/,"");return reply({...await snapshot(db),share_url:`${base}/substitute/${offer.token}`})}
+ else if(b.action==="offer"){
+  if(!b.session_id||!b.instructor_id)return reply({error:"יש לבחור אימון ומדריכה"},400);
+  const [session,instructor]=await Promise.all([
+    db.from("biss_sessions").select("starts_at,status").eq("id",b.session_id).maybeSingle(),
+    db.from("biss_users").select("role,status").eq("id",b.instructor_id).maybeSingle()
+  ]);
+  if(session.error||instructor.error)throw session.error||instructor.error;
+  const now=Date.now(), startsAt=Date.parse(session.data?.starts_at);
+  if(session.data?.status!=="planned"||!(startsAt>now))return reply({error:"יש לבחור אימון מתוכנן שטרם התחיל"},409);
+  if(!canAccessInstructorArea(instructor.data))return reply({error:"יש לבחור מדריכה או מנהלת פעילה"},409);
+  const hours=[24,48,72].includes(Number(b.expires_hours))?Number(b.expires_hours):48;
+  const expires_at=new Date(Math.min(now+hours*60*60*1000,startsAt)).toISOString();
+  const {data:offer,error}=await db.from("biss_substitute_offers").upsert({
+    session_id:b.session_id,instructor_id:b.instructor_id,status:"pending",message:clean(b.message,1200),
+    show_workout:String(b.show_workout)==="true",expires_at,responded_at:null
+  },{onConflict:"session_id,instructor_id"}).select("id,token").single();
+  if(error)throw error;
+  await writeAudit(db,{action:"substitute_offer.created",entityType:"offer",entityId:offer.id,label:"הצעת החלפה",metadata:{status:"pending"}});
+  const share_path=`/substitute/${offer.token}`;
+  return reply({...await snapshot(db),share_path,share_url:new URL(share_path,req.url).href});
+ }
  else if(b.action==="cancel_offer"){
   const id=clean(b.id,120);if(!id)return reply({error:"חסרה הצעת החלפה"},400);
   const{data:offer,error}=await db.from("biss_substitute_offers").update({status:"cancelled",responded_at:new Date().toISOString()}).eq("id",id).eq("status","pending").select("id").maybeSingle();if(error)throw error;if(!offer)return reply({error:"ההצעה כבר נענתה או בוטלה"},409);
@@ -33,6 +62,5 @@ export async function POST(req){if(!await verifyAdminPin(req))return reply({erro
  }
  else return reply({error:"פעולה לא מוכרת"},400);return reply(await snapshot(db));
  }catch(error){console.error("Studio team error",error);return reply({error:"השמירה נכשלה"},500)}}
-
 
 

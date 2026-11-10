@@ -4,8 +4,8 @@ import Link from "next/link";
 import equipmentSeed from "../data/equipment.json";
 import exercisesSeed from "../data/exercises.json";
 import {availableExerciseEquipment,exerciseEquipmentLabel,EQUIPMENT_CATEGORY_OPTIONS} from "../lib/equipment-families";
-import {BLOCKS,FINISHER_TITLE,UPPER_BODY,LOWER_BODY,STRUCTURES,matchesBodyRegion,planWorkoutBlocks,planFinisher,workoutEquipment,workoutPrescription} from "../lib/workout-structure";
-import {BONE_TYPE,BONE_NOTICE,boneExercisesForLevel,bonePrescription} from "../lib/bone-strength";
+import {BLOCKS,FINISHER_TITLE,UPPER_BODY,LOWER_BODY,STRUCTURES,matchesBodyRegion,planWorkoutBlocks,planFinisher,planBoneSets,workoutEquipment,workoutPrescription} from "../lib/workout-structure";
+import {BONE_TYPE,BONE_NOTICE,boneExercisesForLevel} from "../lib/bone-strength";
 import ContinuityPanel from "./continuity/ContinuityPanel";
 import TeamPanel from "./team/TeamPanel";
 import SaveWorkoutPanel from "./continuity/SaveWorkoutPanel";
@@ -239,14 +239,17 @@ export default function Home(){
    const chosen=blockPlan?[]:structure==="סופר סט / Super Fit"
      ? buildSupersetSelection(pool)
      : buildBalancedSelection(pool,targetCount);
-   const stations=chosen.map((x,i)=>{
+   const boneSets=bone&&!blockPlan?planBoneSets(chosen,strengthMinutes,level):null;
+   const stations=(boneSets?.exercises||chosen).map((x,i)=>{
      const {capacity}=workoutEquipment(x,inventory);
-     const prescription=bone?`2 סטים · ${bonePrescription(x)} · עד 90 שנ׳ לסט כולל מנוחה`:workoutPrescription({type:workoutType,structure,level,index:i,count:chosen.length,paired:Boolean(x.supersetGroup)});
+     const prescription=bone?x.prescription:workoutPrescription({type:workoutType,structure,level,index:i,count:chosen.length,paired:Boolean(x.supersetGroup)});
      return {...x,prescription:x.supersetGroup?`${x.supersetSlot}${x.supersetGroup} · ${prescription}`:prescription,
        allocation:capacity<participants?`יש ${capacity} יח׳ ממשפחת ${exerciseEquipmentLabel(x.equipment,inventory)} לכ־${participants} משתתפות — נדרשת רוטציה או חלופה.`:""};
    });
    const finisher=blockPlan?null:bone?boneFinish:planFinisher(finisherPool.filter(x=>!chosen.some(y=>y.id===x.id)),duration,stations.length);
-   const mainSections=bone&&stations.length?[{start:0,title:"עבודת התנגדות",detail:`${strengthMinutes} דק׳ כולל הדגמה, עבודה ומנוחה`}]:[];
+   const mainMinutes=duration-warmMinutes-coolMinutes-(finisher?.minutes||0);
+   const mainDetail=boneSets?.preparationMinutes? `${mainMinutes} דק׳ · ${boneSets.preparationMinutes} דק׳ הכנה ותרגול טכניקה, ואז התרגילים לפי הזמנים הרשומים` : `${mainMinutes} דק׳ · כולל הדגמה, עבודה, מנוחה ומעברים`;
+   const mainSections=stations.length?[{start:0,title:bone?"עבודת התנגדות":"חלק מרכזי",detail:mainDetail}]:[];
    const sections=blockPlan?.sections||[...mainSections,...(finisher?[{...finisher.section,start:stations.length}]:[])];
    const exercises=blockPlan?.exercises||[...stations,...(finisher?.exercises||[])];
    const warnings=blockPlan?.warnings||(!stations.length?["לא נמצאו תרגילים מרכזיים מתאימים לפי הבחירה והמלאי. נסו להרחיב את הסינון."]:[]);
@@ -256,8 +259,10 @@ export default function Home(){
      return;
    }
    const type=workoutTypes.find(x=>x.id===workoutType);
-   const warm=blockPlan||bone?[`${warmMinutes} דק׳ · חימום הדרגתי והדגמת התרגילים`]:workoutType==="functional-hiit"?["3 דק׳ העלאת דופק הדרגתית","3 דק׳ מוביליטי דינמי","סבב הכנה טכני בקצב קל"]:["2 דק׳ העלאת דופק הדרגתית","2–3 דק׳ מוביליטי למפרקים הרלוונטיים","2 דק׳ חזרה טכנית על דפוסי התנועה המרכזיים"];
-   const cool=blockPlan||bone?[`${coolMinutes} דק׳ · הורדת דופק, נשימה ומוביליטי עדין`]:["2 דק׳ הורדת דופק ונשימה","3–5 דק׳ מתיחות/מוביליטי עדינים לפי האזורים שעבדו"];
+   const warm=blockPlan||bone?[`${warmMinutes} דק׳ · חימום הדרגתי והדגמת התרגילים`]:workoutType==="functional-hiit"?["העלאת דופק הדרגתית","מוביליטי דינמי","סבב הכנה טכני בקצב קל"]:["העלאת דופק הדרגתית","מוביליטי למפרקים הרלוונטיים","חזרה טכנית על דפוסי התנועה המרכזיים"];
+   if(!blockPlan&&!bone)warm.unshift(`${warmMinutes} דק׳ לחימום`);
+   const cool=blockPlan||bone?[`${coolMinutes} דק׳ · הורדת דופק, נשימה ומוביליטי עדין`]:["הורדת דופק ונשימה","מתיחות ומוביליטי עדינים לפי האזורים שעבדו"];
+   if(!blockPlan&&!bone)cool.unshift(`${coolMinutes} דק׳ לשחרור`);
    setAlternatives({});
    setWorkout({
      title:`BISS · ${type.label}${regions.length?` · ${regionLabel}`:""}`,
@@ -347,7 +352,7 @@ async function addEquipment(e){
   {tab==="integrations"&&<ArboxPanel/>}
   {tab==="workout"&&workout&&<section className="panel save-workout-shell"><SaveWorkoutPanel workout={workout}/></section>}
 
-  {tab==="builder"&&<section className="panel hero-panel v26-builder-panel"><h2>בניית אימון</h2><div className="sub">בחרו סוג אימון. המערכת מתאימה את הקצב לרמה ומתחשבת במלאי ובקיבולת התחנות.</div><div className="v29-workout-types">{workoutTypes.map(type=><button type="button" key={type.id} className={`v29-workout-type ${workoutType===type.id?"selected":""}`} onClick={()=>{setWorkoutType(type.id);if(type.id===BONE_TYPE){setStructure(BLOCKS);setIncludeFinisher(true);if(level==="מתקדמים")setLevel("בינוניים")}}}><strong>{type.label}</strong><span>{type.description}</span></button>)}</div><div className="filters"><MultiChoice label="אזורי גוף — ניתן לבחור כמה" options={allRegions} selected={regions} onChange={setRegions}/><MultiChoice label="משפחות ציוד — ניתן לבחור כמה" options={allEquipment} selected={equipments} onChange={setEquipments}/><details className="field v28-multi-field"><summary>פירוט הציוד והכמויות במלאי</summary><p className="small">משקולות יד וקטלבל נבחרים לפי משפחה. כאן מוצגים המשקלים והכמויות בפועל.</p><ul>{inventory.filter(item=>item.active!==false&&item.quantity>0).map(item=><li key={item.id||item.name_he}>{item.name_he} · {item.quantity}{item.name_he==="גלייד דיסק"?" זוגות":""}</li>)}</ul></details><label className="field">מבנה<select value={structure} onChange={e=>{setStructure(e.target.value);if(e.target.value===BLOCKS)setIncludeFinisher(true)}}>{(workoutType===BONE_TYPE?boneStructures:STRUCTURES).map(x=><option key={x}>{x}</option>)}</select></label><label className="field">רמה<select value={level} onChange={e=>setLevel(e.target.value)}>{(workoutType===BONE_TYPE?levels.filter(x=>x!=="מתקדמים"):levels).map(x=><option key={x}>{x}</option>)}</select></label><label className="field">משתתפות<input type="number" min="1" max="40" value={people} onChange={e=>setPeople(+e.target.value)}/></label><label className="field">משך בדקות<input type="number" min="20" max="90" value={minutes} onChange={e=>setMinutes(+e.target.value)}/></label></div><label className="permission-check"><input type="checkbox" checked={includeFinisher} onChange={e=>setIncludeFinisher(e.target.checked)}/> {workoutType===BONE_TYPE?"הוספת סיום קבוצתי בשיווי משקל":"הוספת פינישר ליבה קבוצתי"}</label>{workoutType===BONE_TYPE&&<p className="notice">{BONE_NOTICE} ברמת ״מעורב״ משתמשים בתרגילי הבסיס.</p>}{structure===BLOCKS&&<p className="small">עד ארבע תחנות בבלוק. בחירת פלג גוף אחד יוצרת בלוק ממוקד. בחירת שניהם יוצרת שני בלוקים.</p>}<div className="safe" style={{marginTop:14}}>
+  {tab==="builder"&&<section className="panel hero-panel v26-builder-panel"><h2>בניית אימון</h2><div className="sub">בחרו סוג אימון. המערכת מתאימה את הקצב לרמה ומתחשבת במלאי ובקיבולת התחנות.</div><div className="v29-workout-types">{workoutTypes.map(type=><button type="button" key={type.id} className={`v29-workout-type ${workoutType===type.id?"selected":""}`} onClick={()=>{setWorkoutType(type.id);if(type.id===BONE_TYPE&&workoutType!==BONE_TYPE){setStructure(BLOCKS);setIncludeFinisher(true);if(level==="מתקדמים")setLevel("בינוניים")}}}><strong>{type.label}</strong><span>{type.description}</span></button>)}</div><div className="filters"><MultiChoice label="אזורי גוף — ניתן לבחור כמה" options={allRegions} selected={regions} onChange={setRegions}/><MultiChoice label="משפחות ציוד — ניתן לבחור כמה" options={allEquipment} selected={equipments} onChange={setEquipments}/><details className="field v28-multi-field"><summary>פירוט הציוד והכמויות במלאי</summary><p className="small">משקולות יד וקטלבל נבחרים לפי משפחה. כאן מוצגים המשקלים והכמויות בפועל.</p><ul>{inventory.filter(item=>item.active!==false&&item.quantity>0).map(item=><li key={item.id||item.name_he}>{item.name_he} · {item.quantity}{item.name_he==="גלייד דיסק"?" זוגות":""}</li>)}</ul></details><label className="field">מבנה<select value={structure} onChange={e=>setStructure(e.target.value)}>{(workoutType===BONE_TYPE?boneStructures:STRUCTURES).map(x=><option key={x}>{x}</option>)}</select></label><label className="field">רמה<select value={level} onChange={e=>setLevel(e.target.value)}>{(workoutType===BONE_TYPE?levels.filter(x=>x!=="מתקדמים"):levels).map(x=><option key={x}>{x}</option>)}</select></label><label className="field">משתתפות<input type="number" min="1" max="40" value={people} onChange={e=>setPeople(+e.target.value)}/></label><label className="field">משך בדקות<input type="number" min="20" max="90" value={minutes} onChange={e=>setMinutes(+e.target.value)}/></label></div><label className="permission-check"><input type="checkbox" checked={includeFinisher} onChange={e=>setIncludeFinisher(e.target.checked)}/> {workoutType===BONE_TYPE?"הוספת סיום קבוצתי בשיווי משקל":"הוספת פינישר ליבה קבוצתי"}</label>{workoutType===BONE_TYPE&&<p className="notice">{BONE_NOTICE} ברמת ״מעורב״ משתמשים בתרגילי הבסיס.</p>}{structure===BLOCKS&&<p className="small">עד ארבע תחנות בבלוק. בחירת פלג גוף אחד יוצרת בלוק ממוקד. בחירת שניהם יוצרת שני בלוקים.</p>}<div className="safe" style={{marginTop:14}}>
 <strong>התאמות למגבלה / כאב שדווח מראש</strong>
 <div className="small">אפשר לבחור יותר מאפשרות אחת. המערכת לא מאבחנת; היא רק מסמנת תרגילים לבדיקה ומציעה חלופה.</div>
 <div className="row" style={{marginTop:10}}>{limitationProfiles.map(p=><button type="button" key={p.id} className={`btn ${limitations.includes(p.id)?"active-limit":""}`} onClick={()=>toggleLimitation(p.id)}>{p.label}</button>)}</div>

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {planWorkoutBlocks, planFinisher, workoutEquipment, workoutPrescription, workoutSummary} from "../lib/workout-structure.js";
+import {planWorkoutBlocks, planFinisher, planBoneSets, workoutEquipment, workoutPrescription, workoutSummary} from "../lib/workout-structure.js";
 
 const bodyweight = "ללא ציוד";
 const exercise = (id, region, equipment = bodyweight) => ({id, he: id, region, equipment});
@@ -52,4 +52,25 @@ test("summary preserves block headings and can read legacy workouts", () => {
   const summary = workoutSummary({title:"אימון", meta:"בלוקים", ...plan, transitionMinutes:2});
   assert.match(summary, /בלוק 1[\s\S]*בלוק 2[\s\S]*פינישר ליבה קבוצתי/);
   assert.match(workoutSummary({title:"ישן", meta:"תחנות", exercises:[{he:"תרגיל", prescription:"3 סטים"}]}), /תרגיל — 3 סטים/);
+});
+
+test("a 50 minute bone workout reallocates the full finisher budget when disabled", () => {
+  const exercises=lower.map(x=>({...x,boneReps:"8–10"}));
+  const withFinisher=planBoneSets(exercises,50-6-5-4,"מעורב");
+  const withoutFinisher=planBoneSets(exercises,50-6-5,"מעורב");
+  const plannedMinutes=plan=>plan.preparationMinutes+plan.exercises.reduce((sum,x)=>sum+Number.parseInt(x.prescription),0);
+  assert.equal(plannedMinutes(withFinisher)+6+5+4,50);
+  assert.equal(plannedMinutes(withoutFinisher)+6+5,50);
+  assert.deepEqual(withoutFinisher.exercises.map(x=>Number.parseInt(x.prescription)),[9,9,9,9]);
+  assert.equal(withoutFinisher.preparationMinutes,3);
+  assert.ok(withoutFinisher.exercises.every(x=>x.prescription.includes("2 סטים")));
+});
+
+test("blocks retain the full duration when the finisher is off", () => {
+  const pool=[...upper,...lower];
+  const off=planWorkoutBlocks({...options,pool});
+  const on=planWorkoutBlocks({...options,pool,finisherPool:core});
+  const blockMinutes=plan=>plan.sections.slice(0,2).reduce((sum,x)=>sum+Number.parseInt(x.detail),0);
+  assert.equal(blockMinutes(off)-blockMinutes(on),on.finisherMinutes);
+  assert.equal(blockMinutes(off)+off.warmMinutes+off.coolMinutes+off.transition,options.minutes);
 });
