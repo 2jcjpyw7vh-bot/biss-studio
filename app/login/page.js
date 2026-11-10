@@ -17,7 +17,7 @@ export default function LoginPage(){
   <h1>כניסה אישית</h1>
   <div className="sub">קישור חד־פעמי נשלח למייל הרשום. אין צורך בסיסמה.</div>
   {!client&&<div className="notice">הכניסה האישית מוכנה בקוד ותופעל לאחר הוספת המפתח הציבורי של Studio ב‑Vercel.</div>}
-  {client&&profile&&<div className="safe"><strong>שלום {profile.full_name}</strong><p>תפקיד: {roleLabels[profile.role]||profile.role}</p><button className="btn" onClick={signOut}>יציאה</button></div>}
+  {client&&profile&&<div className="safe"><strong>שלום {profile.full_name}</strong><p>תפקיד: {roleLabels[profile.role]||profile.role}</p>{profile.role!=="trainee"&&<Link className="btn primary" href="/my-sessions">האימונים שלי</Link>}<button className="btn" onClick={signOut}>יציאה</button></div>}
   {client&&!profile&&<form onSubmit={sendLink}><label className="field">כתובת המייל הרשומה<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/></label><button className="btn primary" disabled={busy}>{busy?"שולח…":"שליחת קישור כניסה"}</button></form>}
   {message&&<div className={message.includes("נשלח")?"safe":"notice"}>{message}</div>}
   <Link className="btn" href="/">חזרה למערכת</Link>
