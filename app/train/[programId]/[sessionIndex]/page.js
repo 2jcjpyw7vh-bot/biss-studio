@@ -2,20 +2,23 @@
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {useParams} from "next/navigation";
+import {useRouter} from "next/navigation";
 import {supabaseBrowser} from "../../../../lib/supabase-browser";
 
 const clock=value=>`${String(Math.floor(value/60)).padStart(2,"0")}:${String(value%60).padStart(2,"0")}`;
 
 export default function TrainingRunner(){
- const{programId,sessionIndex}=useParams(),[data,setData]=useState(null),[message,setMessage]=useState("טוען אימון מאושר…"),[current,setCurrent]=useState(0),[seconds,setSeconds]=useState(45),[running,setRunning]=useState(false),client=supabaseBrowser();
- useEffect(()=>{if(!client){setMessage("הכניסה האישית עדיין לא הופעלה בשרת.");return}client.auth.getSession().then(async({data:auth})=>{if(!auth.session){setMessage("יש להיכנס תחילה.");return}const r=await fetch(`/api/run/${programId}/${sessionIndex}`,{headers:{Authorization:`Bearer ${auth.session.access_token}`},cache:"no-store"}),d=await r.json();if(!r.ok){setMessage(d.error);return}setData(d);setMessage("")})},[client,programId,sessionIndex]);
+ const{programId,sessionIndex}=useParams(),router=useRouter(),[data,setData]=useState(null),[message,setMessage]=useState("טוען אימון מאושר…"),[current,setCurrent]=useState(0),[seconds,setSeconds]=useState(45),[running,setRunning]=useState(false),[runId,setRunId]=useState(""),[accessToken,setAccessToken]=useState(""),client=supabaseBrowser();
+ useEffect(()=>{if(!client){setMessage("הכניסה האישית עדיין לא הופעלה בשרת.");return}client.auth.getSession().then(async({data:auth})=>{if(!auth.session){setMessage("יש להיכנס תחילה.");return}const token=auth.session.access_token;setAccessToken(token);const r=await fetch(`/api/run/${programId}/${sessionIndex}`,{headers:{Authorization:`Bearer ${token}`},cache:"no-store"}),d=await r.json();if(!r.ok){setMessage(d.error);return}setData(d);const started=await fetch("/api/training-runs",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({action:"start",program_id:programId,session_index:Number(sessionIndex)})}),startData=await started.json();if(started.ok)setRunId(startData.run.id);else setMessage(startData.error);})},[client,programId,sessionIndex]);
  useEffect(()=>{if(!running||seconds<=0)return;const timer=setInterval(()=>setSeconds(value=>value-1),1000);return()=>clearInterval(timer)},[running,seconds]);
  useEffect(()=>{setSeconds(45);setRunning(false)},[current]);
  const fullscreen=()=>document.documentElement.requestFullscreen?.();
+ const finish=async()=>{if(!runId||!accessToken)return;setMessage("שומר סיום אימון…");const r=await fetch("/api/training-runs",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${accessToken}`},body:JSON.stringify({action:"complete",run_id:runId})}),d=await r.json();if(!r.ok){setMessage(d.error);return}router.push("/my-program")};
  if(!data)return <main className="training-runner"><section className="panel"><h2>{message}</h2><Link className="btn" href="/my-program">חזרה לתוכנית</Link></section></main>;
  const items=data.session.items,item=items[current];
  return <main className="training-runner">
-  <header className="runner-topbar"><div><div className="eyebrow">BISS STUDIO · {data.program.title}</div><strong>{data.session.name}</strong></div><div className="row"><button className="btn" onClick={fullscreen}>מסך מלא</button><Link className="btn" href="/my-program">סיום</Link></div></header>
+  <header className="runner-topbar"><div><div className="eyebrow">BISS STUDIO · {data.program.title}</div><strong>{data.session.name}</strong></div><div className="row"><button className="btn" onClick={fullscreen}>מסך מלא</button><button className="btn green" disabled={!runId} onClick={finish}>סיום ושמירה</button></div></header>
+  {message&&<div className="notice">{message}</div>}
   {!item?<section className="runner-stage"><h1>לא הוגדרו תרגילים באימון זה</h1></section>:<section className="runner-stage">
    <div className="runner-progress">תרגיל {current+1} מתוך {items.length}</div>
    <h1>{item.he}</h1>{item.en&&<div className="runner-english">{item.en}</div>}
