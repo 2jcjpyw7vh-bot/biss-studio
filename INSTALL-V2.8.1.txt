@@ -9,6 +9,7 @@ It is designed to be extracted over the root of an existing BISS Studio reposito
    supabase/v2.8-auto-exercises.sql
 4. Ensure Vercel has:
    NEXT_PUBLIC_SUPABASE_URL
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY   (public browser key, required for personal email login)
    SUPABASE_SECRET_KEY
    ADMIN_PIN
    YOUTUBE_API_KEY
@@ -16,3 +17,4 @@ It is designed to be extracted over the root of an existing BISS Studio reposito
 5. Redeploy on Vercel.
 
 No line-by-line code editing is required.
+
