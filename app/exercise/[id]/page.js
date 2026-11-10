@@ -42,7 +42,7 @@ export default async function ExercisePage({params,searchParams}){
       {fromWorkout?<WorkoutBackLink exerciseId={id}/>:<Link className="btn v26-back-btn" href="/?tab=exercises">← חזרה לספרייה</Link>}
     </header>
     <section className="v26-exercise-hero">
-      {x.demoUrl?<div className="v26-media"><strong>הדגמה מקצועית</strong><p>Royal Osteoporosis Society</p><a href={x.demoUrl} className="btn" target="_blank" rel="noreferrer">{x.demoLabel} ↗</a><p className="small">{BONE_NOTICE}</p></div>:<ExerciseMedia exercise={x} youtube={youtube}/>}
+      {x.demoUrl?<div className="v26-media"><strong>הדגמה מקצועית</strong><p>{x.demoSource||"Royal Osteoporosis Society"}</p><a href={x.demoUrl} className="btn" target="_blank" rel="noreferrer">{x.demoLabel} ↗</a>{!x.demoSource&&<p className="small">{BONE_NOTICE}</p>}</div>:<ExerciseMedia exercise={x} youtube={youtube}/>}
       <div className="v26-exercise-summary">
         <div className="eyebrow">BISS EXERCISE LIBRARY · V2.8</div>
         <h1>{x.he}</h1><div className="v26-en">{x.en}</div>
