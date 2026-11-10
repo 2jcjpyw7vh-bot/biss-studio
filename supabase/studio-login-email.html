@@ -1,0 +1,9 @@
+<div dir="rtl" lang="he" style="font-family:Arial,sans-serif;color:#183832;max-width:520px;margin:auto;padding:24px">
+  <p dir="ltr" style="text-align:right;font-weight:bold;letter-spacing:2px">BISS STUDIO</p>
+  <h1>כניסה אישית ל־BISS Studio</h1>
+  <p>קיבלנו בקשה לכניסה למערכת האימונים של הסטודיו. אם ביקשת להיכנס, בחרי אחת משתי הדרכים:</p>
+  <p><a style="display:inline-block;background:#216045;color:#fff;padding:12px 16px;border-radius:6px" href="https://biss-studio.vercel.app/login{{ if eq .RedirectTo "https://biss-studio.vercel.app/login?next=arbox" }}?next=arbox{{ else if eq .RedirectTo "https://biss-studio.vercel.app/login?next=my-sessions" }}?next=my-sessions{{ end }}#token_hash={{ .TokenHash }}">פתיחת BISS Studio</a></p>
+  <p>אפשר גם לחזור למסך הכניסה ולהזין את הקוד החד־פעמי:</p>
+  <p dir="ltr" style="text-align:right;font-size:24px;font-weight:bold;letter-spacing:3px">{{ .Token }}</p>
+  <p>כתובת המערכת היא <bdi>biss-studio.vercel.app</bdi>. אם לא ביקשת להיכנס, אפשר להתעלם מההודעה.</p>
+</div>
