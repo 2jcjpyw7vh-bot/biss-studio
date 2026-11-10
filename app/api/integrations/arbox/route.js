@@ -3,9 +3,28 @@ import {supabaseAdmin} from "../../../../lib/supabase";
 import {arboxConfiguration,checkArboxConnection,readArboxSchedule} from "../../../../lib/arbox-config";
 import {verifyAdminPin} from "../../../../lib/admin-pin";
 import {studioProfileFromRequest} from "../../../../lib/studio-auth";
+import {matchArboxSessions} from "../../../../lib/arbox-session-matching";
 
 export const dynamic="force-dynamic";
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
+
+async function compareSchedule(db,result){
+ const {lessons,...summary}=result;
+ if(!lessons.length)return {...summary,lessons};
+ const ids=[...new Set(lessons.map(lesson=>lesson.scheduleId).filter(Boolean))];
+ const day=86400000;
+ const earliest=new Date(Date.parse(`${summary.from}T00:00:00Z`)-day).toISOString();
+ const latest=new Date(Date.parse(`${summary.to}T00:00:00Z`)+2*day).toISOString();
+ const [within,linked]=await Promise.all([
+  db.from("biss_sessions").select("title,starts_at,arbox_session_id").eq("status","planned")
+    .gte("starts_at",earliest).lt("starts_at",latest).limit(501),
+  ids.length ? db.from("biss_sessions").select("starts_at,arbox_session_id").in("arbox_session_id",ids) : {data:[]}
+ ]);
+ if(within.error||linked.error||within.data?.length>500){
+  return {...summary,comparisonUnavailable:true,lessons:lessons.map(({scheduleId,...lesson})=>lesson)};
+ }
+ return {...summary,lessons:matchArboxSessions(lessons,within.data||[],linked.data||[])};
+}
 
 export async function GET(req){
  if(new URL(req.url).searchParams.get("view")==="schedule"){
@@ -19,7 +38,7 @@ export async function GET(req){
   if(result.error==="not_configured")return reply({error:"נדרש מפתח API פעיל בשרת Studio לפני הצגת הלוח."},503);
   if(result.error==="access_denied")return reply({error:"ארבוקס דחתה את הגישה ללוח. יש לבדוק את המפתח ואת הרשאותיו."},502);
   if(result.error)return reply({error:"לא ניתן לקרוא כרגע את לוח השיעורים מארבוקס."},502);
-  return reply(result);
+  return reply(await compareSchedule(db,result));
  }
  if(!await verifyAdminPin(req))return reply({error:"נדרש PIN מנהל"},401);
  const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);

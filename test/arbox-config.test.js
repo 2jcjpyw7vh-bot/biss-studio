@@ -42,8 +42,8 @@ test("Arbox weekly preview requests aggregate registrations and excludes persona
   assert.equal(request.href,"https://arboxserver.arboxapp.com/api/public/v3/schedule?from_date=2026-11-11&to_date=2026-11-17&limit=20&sort=asc&registration_count=1&registration_details=0");
   assert.equal(options.redirect,"error");
   return Response.json({data:[
-   {date:"2026-11-12",start_time:"18:00:00",end_time:"18:50",session_name:"Barre",location_name:"Studio",max_participants:"7",registration_count:"0",cancelled_status:"1",staff_member:"private",registration_details:[{name:"private"}]},
-   {date:"2026-11-11",start_time:"8:00",session_name:"Pilates"},
+   {date:"2026-11-12",start_time:"18:00:00",end_time:"18:50",schedule_id:123,session_name:"Barre",location_name:"Studio",max_participants:"7",registration_count:"0",cancelled_status:"1",staff_member:"private",registration_details:[{name:"private"}]},
+   {date:"2026-11-11",start_time:"8:00",schedule_id:"invalid,id",session_name:"Pilates"},
    {date:"2026-11-10",start_time:"08:00",session_name:"Outside range"},
    {date:"2026-11-11",start_time:"27:00",session_name:"Invalid time"},
   ]});
@@ -51,8 +51,8 @@ test("Arbox weekly preview requests aggregate registrations and excludes persona
  assert.deepEqual(result,{
   from:"2026-11-11",to:"2026-11-17",limited:false,skipped:2,
   lessons:[
-   {date:"2026-11-11",start:"08:00",end:"",name:"Pilates",location:"",capacity:null,registrations:null,cancelled:false},
-   {date:"2026-11-12",start:"18:00",end:"18:50",name:"Barre",location:"Studio",capacity:7,registrations:0,cancelled:true},
+   {scheduleId:"",date:"2026-11-11",start:"08:00",end:"",name:"Pilates",location:"",capacity:null,registrations:null,cancelled:false},
+   {scheduleId:"123",date:"2026-11-12",start:"18:00",end:"18:50",name:"Barre",location:"Studio",capacity:7,registrations:0,cancelled:true},
   ]
  });
 });
