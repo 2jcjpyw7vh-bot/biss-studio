@@ -4,6 +4,15 @@ import Link from "next/link";
 import { supabaseBrowser } from "../../lib/supabase-browser";
 
 const displayDate = value => new Intl.DateTimeFormat("he-IL", {timeZone:"UTC",day:"numeric",month:"numeric"}).format(new Date(`${value}T00:00:00Z`));
+const matchLabels = {
+  linked:"מקושר ל־Studio",
+  linked_time_changed:"מקושר · המועד שונה ב־Studio",
+  possible:"התאמה אפשרית לפי שם ומועד",
+  ambiguous:"יותר מהתאמה אפשרית אחת",
+  same_time:"אימון אחר באותו מועד ב־Studio",
+  unmatched:"לא נמצאה התאמה ב־Studio",
+  missing_id:"מזהה שיעור חסר",
+};
 
 function connectionStatus(result) {
   if (result.ok) return "הגישה אומתה";
@@ -106,11 +115,17 @@ export default function ArboxPanel() {
         {scheduleError && <p className="notice">{scheduleError}</p>}
         {schedule && <>
           <p className="small">{displayDate(schedule.from)}–{displayDate(schedule.to)} · {schedule.lessons.length} שיעורים בתצוגה</p>
+          {schedule.comparisonUnavailable
+            ? <p className="notice">הלוח נטען, אך לא היה אפשר להשוות אותו לאימוני Studio.</p>
+            : schedule.lessons.length>0&&<p className="small">השוואה ל־Studio לפי מזהה קיים, או שם ומועד. התאמה אפשרית דורשת בדיקה.</p>}
           {schedule.limited && <p className="small">ייתכן שיש שיעורים נוספים בטווח. מוצגות עד 20 רשומות.</p>}
           {schedule.skipped>0 && <p className="notice">חלק מהרשומות חסרות מועד תקין ולכן הושמטו.</p>}
           {schedule.lessons.length===0 && schedule.skipped===0 && <p>לא נמצאו שיעורים בטווח הזה.</p>}
           {schedule.lessons.map((lesson,index)=><article className="card" key={index}>
-            <strong>{lesson.name}</strong>{lesson.cancelled&&<span className="tag"> בוטל</span>}
+            <div className="row">
+              <strong>{lesson.name}</strong>{lesson.cancelled&&<span className="tag">בוטל</span>}
+              {matchLabels[lesson.match]&&<span className={`tag ${lesson.match==="linked"?"green":""}`}>{matchLabels[lesson.match]}</span>}
+            </div>
             <div className="small">{displayDate(lesson.date)} · <bdi>{lesson.start}{lesson.end ? `–${lesson.end}` : ""}</bdi>{lesson.location && ` · ${lesson.location}`}</div>
             <div className="small">{lesson.capacity!==null && `קיבולת ${lesson.capacity}`}{lesson.capacity!==null && lesson.registrations!==null && " · "}{lesson.registrations!==null && `נרשמו ${lesson.registrations}`}</div>
           </article>)}
