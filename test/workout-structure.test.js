@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {planWorkoutBlocks, planFinisher, planBoneSets, workoutEquipment, workoutPrescription, workoutSummary} from "../lib/workout-structure.js";
+import {planWorkoutBlocks, planFinisher, planBoneSets, planSupersets, sharedWorkoutPlan, SUPERSET, workoutEquipment, workoutPrescription, workoutSummary} from "../lib/workout-structure.js";
 
 const bodyweight = "ללא ציוד";
 const exercise = (id, region, equipment = bodyweight) => ({id, he: id, region, equipment});
@@ -73,4 +73,22 @@ test("blocks retain the full duration when the finisher is off", () => {
   const blockMinutes=plan=>plan.sections.slice(0,2).reduce((sum,x)=>sum+Number.parseInt(x.detail),0);
   assert.equal(blockMinutes(off)-blockMinutes(on),on.finisherMinutes);
   assert.equal(blockMinutes(off)+off.warmMinutes+off.coolMinutes+off.transition,options.minutes);
+});
+
+test("a 50-minute superset workout specifies pairs, rounds and per-round repetitions", () => {
+  const exercises=Array.from({length:6},(_,i)=>({
+    ...exercise(`pair-${i}`,"רגליים"),supersetGroup:Math.floor(i/2)+1,supersetSlot:i%2?"B":"A"
+  }));
+  const plan=planSupersets(exercises,39,"classic","מעורב");
+  assert.deepEqual(plan.sections.map(x=>x.start),[0,2,4]);
+  assert.ok(plan.sections.every(x=>/^13 דק׳ · 3 סבבים/.test(x.detail)));
+  assert.match(plan.exercises[1].prescription,/B1 · 8–12 חזרות בכל סבב/);
+  const legacy=sharedWorkoutPlan({meta:`50 דק׳ · 9 משתתפות · ${SUPERSET}`,exercises:exercises.map(x=>({
+    id:x.id,prescription:`${x.supersetSlot}${x.supersetGroup} · 8–12 חזרות`
+  }))});
+  assert.deepEqual(legacy.legacyTiming,{warm:6,cool:5,mainMinutes:39,finisher:0});
+  assert.deepEqual(legacy.sections,plan.sections);
+  const newShare=sharedWorkoutPlan({meta:`50 דק׳ · ${SUPERSET}`,...plan});
+  assert.equal(newShare.legacyTiming,undefined);
+  assert.deepEqual(newShare.sections,plan.sections);
 });
