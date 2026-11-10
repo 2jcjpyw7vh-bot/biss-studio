@@ -6,7 +6,8 @@
 
 - אתר: https://biss-studio.vercel.app
 - GitHub: `2jcjpyw7vh-bot/biss-studio`
-- Supabase Studio: `onnecsibxkcdyhbzffgj`
+- Supabase Studio המבודד: `nqpxgxoxxafsrmvfrqnh` (אירופה, Frankfurt)
+- הפרויקט הישן `onnecsibxkcdyhbzffgj` משותף עם Vineyard ואינו משמש עוד את Studio לאחר השלמת הפריסה.
 - פריסת Vercel וגרסת GitHub מאומתות אחרונות: `9aaff41ff6e86896ae5c1853c3629e893bfd87f8`
 - שחזור חשבון Vercel בטיפול, פנייה `TNS_01YDlwQGmwFDxHKR`. אין לשנות חיבורים או לפתוח פרויקט חלופי בזמן ההמתנה.
 - אין לגעת בפרויקט BISS Vineyard, בחיבורים, בסודות, בהרשאות או בטבלאות שלו.
@@ -30,7 +31,7 @@
 - מסך אימון מלא עם טיימר, הסברים והתקדמות בין אימונים.
 - התחלה וסיום של אימון עצמאי נשמרים בענן ואינם תלויים בעוגיות או באחסון המקומי בדפדפן.
 - המערכת מציגה למתאמן את האימון הבא ומסמנת אימונים שהושלמו.
-- יפתח סגל רשום כמנהל Studio פעיל, אך הכניסה האישית במייל הושהתה: שירות ההזדהות המשותף מפנה ל-Vineyard. אין להפעיל שוב עד לחיבור Auth נפרד ומאומת של Studio.
+- יפתח סגל רשום כמנהל Studio פעיל בפרויקט הנפרד. Auth של Studio מבודד מ-Vineyard וכתובת החזרה היא `https://biss-studio.vercel.app/login`.
 - מנהל מזוהה יכול לאפס PIN בן 6 ספרות. ה-PIN נשמר כמחרוזת מגובבת ומומלחת ולא כטקסט גלוי.
 
 ## טבלאות Studio
