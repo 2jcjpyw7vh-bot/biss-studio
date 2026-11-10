@@ -1,22 +1,28 @@
-BISS Studio V2.8.1 — Update Overlay
+BISS Studio V2.9.0 — CURRENT INSTALLATION NOTES
 
-This ZIP contains only files that are new or replaced by V2.8.1.
-It is designed to be extracted over the root of an existing BISS Studio repository.
+The filename is retained for compatibility with older backup packages.
+For a full recovery, use docs/RECOVERY_RUNBOOK.md.
 
-1. Back up / commit the current repository.
-2. Extract this ZIP over the repository root and allow replacement of matching files.
-3. In Supabase SQL Editor run:
-   supabase/v2.8-auto-exercises.sql
-4. Ensure Vercel has:
-   NEXT_PUBLIC_SUPABASE_URL
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY   (public browser key, required for personal email login)
-   SUPABASE_SECRET_KEY
-   ADMIN_PIN
+1. Clone https://github.com/2jcjpyw7vh-bot/biss-studio and use branch main.
+2. Run: pnpm install --frozen-lockfile
+3. Run: pnpm test
+4. Apply the SQL files in the exact order documented in docs/RECOVERY_RUNBOOK.md.
+5. Configure these Studio-only Vercel environment variable names:
+   NEXT_PUBLIC_STUDIO_SUPABASE_URL
+   NEXT_PUBLIC_STUDIO_SUPABASE_PUBLISHABLE_KEY
+   STUDIO_SUPABASE_SECRET_KEY
+   NEXT_PUBLIC_SITE_URL
+   ADMIN_PIN                  (legacy/bootstrap fallback only)
+
+Optional integrations:
    YOUTUBE_API_KEY
-   GEMINI_API_KEY   (required for automatic exercise generation for unknown future equipment)
-   ARBOX_API_V3_BASE_URL   (only an official URL supplied by Arbox)
-   ARBOX_API_KEY           (server-only official key; never NEXT_PUBLIC)
-5. Redeploy on Vercel.
+   GEMINI_API_KEY
+   GEMINI_MODEL
+   ARBOX_API_V3_BASE_URL
+   ARBOX_API_KEY
 
-No line-by-line code editing is required.
+Old NEXT_PUBLIC_SUPABASE_* and SUPABASE_SECRET_KEY names remain code fallbacks only.
+Do not point them to the shared legacy project. Never copy values from BISS Vineyard.
+
+No secret value belongs in this file, GitHub, screenshots, chat, or backup manifests.
 
