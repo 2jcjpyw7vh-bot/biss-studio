@@ -14,6 +14,8 @@ It is designed to be extracted over the root of an existing BISS Studio reposito
    ADMIN_PIN
    YOUTUBE_API_KEY
    GEMINI_API_KEY   (required for automatic exercise generation for unknown future equipment)
+   ARBOX_API_V3_BASE_URL   (only an official URL supplied by Arbox)
+   ARBOX_API_KEY           (server-only official key; never NEXT_PUBLIC)
 5. Redeploy on Vercel.
 
 No line-by-line code editing is required.
