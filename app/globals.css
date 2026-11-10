@@ -513,6 +513,9 @@ input,select,textarea{min-height:46px;border-color:#dce4de;background:#fcfdfc}
 .v25-prescription{font-size:15px;color:#29342d}
 .v25-meta span{background:#f1f5f2;color:#536058}
 .v25-open-btn{background:var(--v26-green-dark)!important;border-color:var(--v26-green-dark)!important}
+.v25-workout-exercise-link::after{content:"";position:absolute;inset:0}
+.v25-workout-exercise-link:hover{transform:none}
+.v25-workout-alternative-link{position:relative;z-index:2}
 
 /* Exercise detail */
 .v26-exercise-page{max-width:1160px;padding:24px 22px 52px}
