@@ -124,6 +124,8 @@ test("short interval plans use the rounds that fit and EMOM numbers each minute"
   const stationPlan=planTimedStructure(exercises,11,"תחנות","classic","מעורב");
   assert.match(stationPlan.sections[0].detail,/8 דק׳ בסבבים · 1 סבב[\s\S]*3 דק׳ להדגמה/);
   const emom=planTimedStructure(exercises,39,"EMOM","functional-hiit","מתחילים");
-  assert.match(emom.sections[0].detail,/16 דק׳ בסבבים · 2 סבבים/);
+  assert.match(emom.sections[0].detail,/24 דק׳ בסבבים · 3 סבבים/);
   assert.match(emom.exercises[7].prescription,/דקה 8 בכל סבב/);
+  const mixed=planTimedStructure(exercises.slice(0,6),39,"EMOM","classic","מעורב");
+  assert.match(mixed.sections[0].detail,/30 דק׳ בסבבים · 5 סבבים[\s\S]*9 דק׳ להדגמה/);
 });
