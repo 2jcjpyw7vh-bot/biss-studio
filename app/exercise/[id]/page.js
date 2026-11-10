@@ -4,6 +4,7 @@ import exercisesSeed from "../../../data/exercises.json";
 import {supabaseAdmin} from "../../../lib/supabase";
 import ExerciseActions from "../ExerciseActions";
 import ExerciseMedia from "./ExerciseMedia";
+import {BONE_EXERCISES,BONE_NOTICE} from "../../../lib/bone-strength";
 
 function fromDb(x){
   return x?{
@@ -14,6 +15,8 @@ function fromDb(x){
   }:null;
 }
 async function getExercise(id){
+  const boneExercise=BONE_EXERCISES.find(x=>x.id===id);
+  if(boneExercise)return boneExercise;
   const db=supabaseAdmin();
   if(db){
     const {data}=await db.from("exercises").select("*").eq("exercise_id",id).eq("active",true).maybeSingle();
@@ -21,7 +24,7 @@ async function getExercise(id){
   }
   return exercisesSeed.find(e=>e.id===id)||null;
 }
-export function generateStaticParams(){return exercisesSeed.map(x=>({id:x.id}))}
+export function generateStaticParams(){return [...exercisesSeed,...BONE_EXERCISES].map(x=>({id:x.id}))}
 export async function generateMetadata({params}){
   const {id}=await params,x=await getExercise(id);
   if(!x)return{title:"תרגיל | BISS"};
@@ -38,7 +41,7 @@ export default async function ExercisePage({params,searchParams}){
       <Link className="btn v26-back-btn" href={fromWorkout?"/?tab=workout":"/?tab=exercises"}>{fromWorkout?"← חזרה לאימון":"← חזרה לספרייה"}</Link>
     </header>
     <section className="v26-exercise-hero">
-      <ExerciseMedia exercise={x} youtube={youtube}/>
+      {x.demoUrl?<div className="v26-media"><strong>הדגמה מקצועית</strong><p>Royal Osteoporosis Society</p><a href={x.demoUrl} className="btn" target="_blank" rel="noreferrer">{x.demoLabel} ↗</a><p className="small">{BONE_NOTICE}</p></div>:<ExerciseMedia exercise={x} youtube={youtube}/>}
       <div className="v26-exercise-summary">
         <div className="eyebrow">BISS EXERCISE LIBRARY · V2.8</div>
         <h1>{x.he}</h1><div className="v26-en">{x.en}</div>
@@ -53,7 +56,7 @@ export default async function ExercisePage({params,searchParams}){
       {x.progression&&<article className="v26-card"><div className="v26-card-icon">＋</div><div><h3>מתקדם יותר</h3><p>{x.progression}</p></div></article>}
     </section>
     {x.safety&&<section className="v26-safety"><div className="v26-safety-icon">!</div><div><strong>בטיחות והתאמה</strong><p>{x.safety}</p><span>בכאב, מגבלה, הריון או הנחיה רפואית — המדריכה מתאימה את התרגיל לפי המצב בפועל. הדף אינו אבחון רפואי.</span></div></section>}
-    <section className="v26-action-panel"><div><div className="eyebrow">SHARE & PRACTICE</div><h3>הדגמה ושיתוף</h3><p className="small">פתחו הדגמה או שתפו את דף התרגיל ישירות.</p></div><div className="v26-action-buttons"><a className="btn primary" href={youtube} target="_blank" rel="noreferrer">▶ סרטון הדגמה</a><ExerciseActions exercise={x}/></div></section>
+    <section className="v26-action-panel"><div><div className="eyebrow">SHARE & PRACTICE</div><h3>הדגמה ושיתוף</h3><p className="small">פתחו הדגמה או שתפו את דף התרגיל ישירות.</p></div><div className="v26-action-buttons"><a className="btn primary" href={x.demoUrl||youtube} target="_blank" rel="noreferrer">▶ סרטון הדגמה</a><ExerciseActions exercise={x}/></div></section>
     <footer className="footer">BISS · ספריית תרגילים V2.8</footer>
   </main>;
 }
