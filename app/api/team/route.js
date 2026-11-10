@@ -2,11 +2,24 @@ import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {writeAudit} from "../../../lib/audit";
 import {verifyAdminPin} from "../../../lib/admin-pin";
-import {canAccessInstructorArea} from "../../../lib/studio-permissions";
+import {studioLocalTimeToIso} from "../../../lib/studio-time";
+import {studioWorkoutFields} from "../../../lib/studio-workout-payload";
 export const dynamic="force-dynamic";
 const clean=(v,n=300)=>String(v||"").trim().slice(0,n);
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
-async function snapshot(db){const [users,sessions,groups,offers,audit]=await Promise.all([db.from("biss_users").select("*").order("full_name"),db.from("biss_sessions").select("*").order("starts_at",{ascending:false}).limit(80),db.from("biss_groups").select("id,name"),db.from("biss_substitute_offers").select("*").order("created_at",{ascending:false}).limit(100),db.from("biss_audit_log").select("id,action,entity_type,label,metadata,created_at").order("created_at",{ascending:false}).limit(30)]);const error=[users,sessions,groups,offers,audit].find(x=>x.error)?.error;if(error)throw error;return{users:users.data||[],sessions:sessions.data||[],groups:groups.data||[],offers:offers.data||[],audit:audit.data||[]}}
+async function snapshot(db){
+ const [users,sessions,planned,groups,offers,audit]=await Promise.all([
+  db.from("biss_users").select("*").order("full_name"),
+  db.from("biss_sessions").select("id,group_id,title,starts_at").order("starts_at",{ascending:false}).limit(80),
+  db.from("biss_sessions").select("id,group_id,title,starts_at,workout_summary,playlist_url,instructor_name").eq("status","planned").gt("starts_at",new Date().toISOString()).order("starts_at").limit(100),
+  db.from("biss_groups").select("id,name,active").order("name"),
+  db.from("biss_substitute_offers").select("*").order("created_at",{ascending:false}).limit(100),
+  db.from("biss_audit_log").select("id,action,entity_type,label,metadata,created_at").order("created_at",{ascending:false}).limit(30)
+ ]);
+ const error=[users,sessions,planned,groups,offers,audit].find(x=>x.error)?.error;
+ if(error)throw error;
+ return {users:users.data||[],sessions:sessions.data||[],planned_sessions:planned.data||[],groups:groups.data||[],offers:offers.data||[],audit:audit.data||[]};
+}
 export async function GET(req){if(!await verifyAdminPin(req))return reply({error:"נדרש PIN מנהל"},401);const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);try{return reply(await snapshot(db))}catch{return reply({error:"לא ניתן לטעון את הצוות"},503)}}
 export async function POST(req){if(!await verifyAdminPin(req))return reply({error:"PIN שגוי"},401);const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);const b=await req.json();try{
  if(b.action==="user"){
@@ -34,26 +47,54 @@ export async function POST(req){if(!await verifyAdminPin(req))return reply({erro
   const{error:linkError}=await db.from("biss_users").update({auth_user_id:invited.user.id}).eq("id",id).is("auth_user_id",null);if(linkError)throw linkError;
   await writeAudit(db,{action:"user.invited",entityType:"user",entityId:id,label:person.full_name,metadata:{status:"invited"}})
  }
+ else if(b.action==="offer_group"){
+  const name=clean(b.name,100);
+  if(!name)return reply({error:"יש להזין שם לקבוצה"},400);
+  const {data:existing,error:lookupError}=await db.from("biss_groups").select("id").eq("name",name).eq("active",true).limit(1).maybeSingle();
+  if(lookupError)throw lookupError;
+  if(existing)return reply({...await snapshot(db),created_group_id:existing.id});
+  const {data:group,error}=await db.from("biss_groups").insert({name}).select("id").single();
+  if(error)throw error;
+  await writeAudit(db,{action:"group.created",entityType:"group",entityId:group.id,label:name});
+  return reply({...await snapshot(db),created_group_id:group.id});
+ }
+ else if(b.action==="plan_offer_session"){
+  const starts_at=studioLocalTimeToIso(b.starts_at);
+  if(!starts_at||Date.parse(starts_at)<=Date.now())return reply({error:"יש לבחור תאריך ושעה עתידיים לפי שעון ישראל"},400);
+  const title=clean(b.title,160);
+  if(!title||!b.group_id)return reply({error:"יש לבחור קבוצה ולהזין כותרת לאימון"},400);
+  const {data:group,error:groupError}=await db.from("biss_groups").select("id").eq("id",b.group_id).eq("active",true).maybeSingle();
+  if(groupError)throw groupError;
+  if(!group)return reply({error:"הקבוצה אינה זמינה"},409);
+  const {data:existing,error:lookupError}=await db.from("biss_sessions").select("id").eq("group_id",group.id).eq("starts_at",starts_at).eq("status","planned").limit(1).maybeSingle();
+  if(lookupError)throw lookupError;
+  if(existing)return reply({error:"כבר יש אימון מתוכנן לקבוצה במועד הזה. אפשר לבחור אותו מהרשימה."},409);
+  const workout=studioWorkoutFields(b.workout);
+  const playlist=clean(workout?.workout_payload.musicUrl||b.playlist_url,500);
+  if(playlist&&!/^https?:\/\//i.test(playlist))return reply({error:"קישור לפלייליסט צריך להתחיל ב־https:// או http://"},400);
+  const {data:session,error}=await db.from("biss_sessions").insert({
+    group_id:group.id,title,starts_at,status:"planned",playlist_url:playlist,
+    ...(workout ? {...workout,workout_version:1,workout_saved_at:new Date().toISOString()}
+      : {workout_summary:clean(b.workout_summary,4000)})
+  }).select("id").single();
+  if(error)throw error;
+  await writeAudit(db,{action:"session.created",entityType:"session",entityId:session.id,label:title});
+  return reply({...await snapshot(db),created_session_id:session.id});
+ }
  else if(b.action==="offer"){
   if(!b.session_id||!b.instructor_id)return reply({error:"יש לבחור אימון ומדריכה"},400);
-  const [session,instructor]=await Promise.all([
-    db.from("biss_sessions").select("starts_at,status").eq("id",b.session_id).maybeSingle(),
-    db.from("biss_users").select("role,status").eq("id",b.instructor_id).maybeSingle()
-  ]);
-  if(session.error||instructor.error)throw session.error||instructor.error;
-  const now=Date.now(), startsAt=Date.parse(session.data?.starts_at);
-  if(session.data?.status!=="planned"||!(startsAt>now))return reply({error:"יש לבחור אימון מתוכנן שטרם התחיל"},409);
-  if(!canAccessInstructorArea(instructor.data))return reply({error:"יש לבחור מדריכה או מנהלת פעילה"},409);
   const hours=[24,48,72].includes(Number(b.expires_hours))?Number(b.expires_hours):48;
-  const expires_at=new Date(Math.min(now+hours*60*60*1000,startsAt)).toISOString();
-  const {data:offer,error}=await db.from("biss_substitute_offers").upsert({
-    session_id:b.session_id,instructor_id:b.instructor_id,status:"pending",message:clean(b.message,1200),
-    show_workout:String(b.show_workout)==="true",expires_at,responded_at:null
-  },{onConflict:"session_id,instructor_id"}).select("id,token").single();
+  const {data:offer,error}=await db.rpc("studio_create_substitute_offer",{
+    p_session:b.session_id,p_instructor:b.instructor_id,p_hours:hours,
+    p_message:clean(b.message,1200),p_show_workout:String(b.show_workout)==="true"
+  }).single();
   if(error)throw error;
-  await writeAudit(db,{action:"substitute_offer.created",entityType:"offer",entityId:offer.id,label:"הצעת החלפה",metadata:{status:"pending"}});
-  const share_path=`/substitute/${offer.token}`;
-  return reply({...await snapshot(db),share_path,share_url:new URL(share_path,req.url).href});
+  if(offer.result==="invalid_session")return reply({error:"יש לבחור אימון מתוכנן שטרם התחיל"},409);
+  if(offer.result==="invalid_instructor")return reply({error:"יש לבחור מדריכה או מנהלת פעילה"},409);
+  if(offer.result==="already_assigned")return reply({error:"הצעת החלפה לאימון הזה כבר אושרה"},409);
+  if(offer.result==="created")await writeAudit(db,{action:"substitute_offer.created",entityType:"offer",entityId:offer.offer_id,label:"הצעת החלפה",metadata:{status:"pending"}});
+  const share_path="/substitute/"+offer.offer_token;
+  return reply({...await snapshot(db),share_path,share_url:new URL(share_path,req.url).href,reused_offer:offer.result==="reused"});
  }
  else if(b.action==="cancel_offer"){
   const id=clean(b.id,120);if(!id)return reply({error:"חסרה הצעת החלפה"},400);

@@ -3,8 +3,8 @@ import {useState} from "react";
 
 export default function ContinuityPanel(){
  const [pin,setPin]=useState(""),[data,setData]=useState(null),[message,setMessage]=useState(""),[busy,setBusy]=useState(false);
- const call=async(body)=>{setBusy(true);setMessage("");try{const r=await fetch("/api/continuity",{method:body?"POST":"GET",cache:"no-store",headers:{"Content-Type":"application/json","x-admin-pin":pin},body:body?JSON.stringify(body):undefined});const value=await r.json();if(!r.ok)throw new Error(value.error||"שגיאה");setData(value);setMessage(body?"✓ המידע נשמר במסד Studio":"✓ המידע נטען ממסד Studio")}catch(error){setMessage(`⚠️ ${error.message}`)}finally{setBusy(false)}};
- const submit=(action)=>async event=>{event.preventDefault();const values=Object.fromEntries(new FormData(event.currentTarget));await call({action,...values});event.currentTarget.reset()};
+ const call=async(body)=>{setBusy(true);setMessage("");try{const r=await fetch("/api/continuity",{method:body?"POST":"GET",cache:"no-store",headers:{"Content-Type":"application/json","x-admin-pin":pin},body:body?JSON.stringify(body):undefined});const value=await r.json();if(!r.ok)throw new Error(value.error||"שגיאה");setData(value);setMessage(body?"✓ המידע נשמר במסד Studio":"✓ המידע נטען ממסד Studio");return true;}catch(error){setMessage(`⚠️ ${error.message}`)}finally{setBusy(false)}};
+ const submit=(action)=>async event=>{event.preventDefault();const form=event.currentTarget;const values=Object.fromEntries(new FormData(form));if(await call({action,...values}))form.reset()};
  const groups=data?.groups||[],sessions=data?.sessions||[],adaptations=data?.adaptations||[],handoffs=data?.handoffs||[],users=data?.users||[];
  const groupName=id=>groups.find(group=>group.id===id)?.name||"קבוצה";
  const sessionName=id=>{const session=sessions.find(item=>item.id===id);return session?`${groupName(session.group_id)} · ${new Date(session.starts_at).toLocaleString("he-IL")}`:"אימון"};
@@ -20,4 +20,3 @@ export default function ContinuityPanel(){
   <div className="continuity-list"><h3>תדריך עדכני</h3>{sessions.length===0?<div className="sub">עדיין אין אימונים מתוכננים.</div>:sessions.slice(0,12).map(session=><article className="card" key={session.id}><div className="row between"><strong>{groupName(session.group_id)} · {session.title}</strong><span className="tag">{new Date(session.starts_at).toLocaleString("he-IL")}</span></div><div className="small">מדריכה: {session.instructor_name||"טרם שובצה"}</div>{session.workout_summary&&<p>{session.workout_summary}</p>}{adaptations.filter(x=>x.group_id===session.group_id).map(x=><div className="notice" key={x.id}><strong>{x.member_name} · {x.category}</strong><div>{x.guidance}</div></div>)}{handoffs.filter(x=>x.session_id===session.id).map(x=><div className="safe" key={x.id}><strong>עדכון {x.author_name||"מהצוות"}</strong><div>{x.note}</div></div>)}</article>)}</div></>}
  </section>
 }
-
