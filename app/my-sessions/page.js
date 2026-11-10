@@ -1,4 +1,6 @@
 "use client";
+import BoneDemoLinks from "../exercise/BoneDemoLinks";
+import {boneDemos} from "../../lib/bone-strength";
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {supabaseBrowser} from "../../lib/supabase-browser";
@@ -14,6 +16,7 @@ export default function MySessionsPage(){
    {data.sessions.length===0?<section className="panel"><div className="sub">אין כרגע אימונים משויכים אלייך.</div></section>:data.sessions.map(session=>{const g=group(session.group_id),notes=data.handoffs.filter(x=>x.session_id===session.id),limits=data.adaptations.filter(x=>x.group_id===session.group_id);return <article className="panel instructor-session" key={session.id}>
     <div className="row between"><div><h2>{g?.name||"קבוצה"} · {session.title}</h2><div className="sub">{new Date(session.starts_at).toLocaleString("he-IL")} · {g?.level||"רמה מעורבת"}</div></div><span className="tag green">{session.status}</span></div>
     {session.workout_summary?<div className="safe"><strong>תוכנית האימון</strong><p style={{whiteSpace:"pre-line"}}>{session.workout_summary}</p></div>:<div className="notice">תוכנית האימון עדיין לא נשמרה.</div>}
+    <BoneDemoLinks demos={boneDemos(session.workout_payload)}/>
     {(session.playlist_url||g?.playlist_url)&&<a className="btn" href={session.playlist_url||g.playlist_url} target="_blank" rel="noreferrer">פתיחת הפלייליסט</a>}
     {notes.map(note=><div className="safe" key={note.id}><strong>עדכון מהצוות · {note.author_name||"ללא שם"}</strong><div>{note.note}</div></div>)}
     {data.profile.can_view_health&&limits.length>0&&<div className="instructor-adaptations"><h3>התאמות נדרשות</h3>{limits.map(item=><div className="notice" key={item.id}><strong>{item.member_name} · {item.category}</strong><div>{item.guidance}</div></div>)}</div>}
