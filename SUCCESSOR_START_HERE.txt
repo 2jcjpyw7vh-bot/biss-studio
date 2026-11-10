@@ -1,0 +1,26 @@
+BISS STUDIO — START HERE / מתחילים כאן
+עודכן: 10 בנובמבר 2026
+
+אם קיבלת אחריות על המערכת ללא חפיפה:
+
+1. אל תשנה ואל תמחק דבר לפני שקראת את CONTINUITY.md.
+2. ודא שיש לך גישה חוקית לחשבונות GitHub, Vercel ו-Supabase של BISS Studio בלבד.
+3. לעולם אל תשתמש בפרויקט Supabase הישן onnecsibxkcdyhbzffgj — הוא משותף עם BISS Vineyard.
+4. פרויקט Supabase הנכון של Studio הוא nqpxgxoxxafsrmvfrqnh.
+5. האתר החי הוא https://biss-studio.vercel.app.
+6. הקוד הקובע נמצא ב-https://github.com/2jcjpyw7vh-bot/biss-studio בענף main.
+7. לפני פריסה או שחזור קרא:
+   - docs/SUCCESSION_AND_ACCESS.md
+   - docs/RECOVERY_RUNBOOK.md
+   - docs/DATA_BACKUP_RUNBOOK.md
+   - reports/QA-2026-11-10.md
+8. הגיבוי המקומי הסופי נמצא ב-backups/BISS-Studio-continuity-backup-2026-11-10-final.zip. חתימת התקינות שלו נמצאת בקובץ ה-manifest בעל אותו שם.
+9. אין לשלוח או לשמור במייל/צ'אט/GitHub סיסמאות, PIN, מפתחות API, קודי אימות או מידע רפואי מזוהה.
+10. אם חסרה גישה לחשבון, פעל דרך הליך הירושה/השחזור הרשמי של הספק. אל תפתח פרויקט חלופי ואל תחבר מחדש שירותים לפני שהבנת את המצב.
+
+תיקיית העבודה במחשב שבו נוצר הגיבוי:
+C:\Users\segal\OneDrive\Documents\ChatGPT\BISS Studio – מערכת לבניית אימונים
+
+המסמך המלא שמסביר מי רואה מה ואיפה שומרים הרשאות:
+docs/SUCCESSION_AND_ACCESS.md
+
