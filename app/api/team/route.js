@@ -20,6 +20,13 @@ export async function POST(req){if(!admin(req))return reply({error:"PIN שגוי
   const{error}=await db.from("biss_users").update({role,status,can_view_health}).eq("id",id);if(error)throw error;
   await writeAudit(db,{action:"user.updated",entityType:"user",entityId:id,label:current.full_name,metadata:{role,status}})
  }
+ else if(b.action==="invite_user"){
+  const id=clean(b.id,120);if(!id)return reply({error:"חסרה משתמשת"},400);
+  const{data:person,error:personError}=await db.from("biss_users").select("id,full_name,email,status,auth_user_id").eq("id",id).single();if(personError||!person)return reply({error:"המשתמשת לא נמצאה"},404);if(person.status!=="active"||!person.email)return reply({error:"נדרש חשבון פעיל עם כתובת מייל"},409);if(person.auth_user_id)return reply({error:"למשתמשת כבר קיים חשבון כניסה"},409);
+  const base=(process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000").replace(/\/$/,"");const{data:invited,error:inviteError}=await db.auth.admin.inviteUserByEmail(person.email,{redirectTo:`${base}/login`});if(inviteError)throw inviteError;
+  const{error:linkError}=await db.from("biss_users").update({auth_user_id:invited.user.id}).eq("id",id).is("auth_user_id",null);if(linkError)throw linkError;
+  await writeAudit(db,{action:"user.invited",entityType:"user",entityId:id,label:person.full_name,metadata:{status:"invited"}})
+ }
  else if(b.action==="offer"){if(!b.session_id||!b.instructor_id)return reply({error:"יש לבחור אימון ומדריכה"},400);const hours=[24,48,72].includes(Number(b.expires_hours))?Number(b.expires_hours):48,expires_at=new Date(Date.now()+hours*60*60*1000).toISOString();const{data:offer,error}=await db.from("biss_substitute_offers").upsert({session_id:b.session_id,instructor_id:b.instructor_id,status:"pending",message:clean(b.message,1200),show_workout:String(b.show_workout)==="true",expires_at,responded_at:null},{onConflict:"session_id,instructor_id"}).select("id,token").single();if(error)throw error;await writeAudit(db,{action:"substitute_offer.created",entityType:"offer",entityId:offer.id,label:"הצעת החלפה",metadata:{status:"pending"}});const base=(process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000").replace(/\/$/,"");return reply({...await snapshot(db),share_url:`${base}/substitute/${offer.token}`})}
  else if(b.action==="cancel_offer"){
   const id=clean(b.id,120);if(!id)return reply({error:"חסרה הצעת החלפה"},400);
