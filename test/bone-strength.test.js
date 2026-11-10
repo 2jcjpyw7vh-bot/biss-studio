@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {BONE_TYPE, boneDemos, boneExercisesForLevel} from "../lib/bone-strength.js";
-import {LOWER_BODY, UPPER_BODY, matchesBodyRegion, planWorkoutBlocks} from "../lib/workout-structure.js";
+import {LOWER_BODY, UPPER_BODY, matchesBodyRegion, planWorkoutBlocks, workoutEquipment} from "../lib/workout-structure.js";
 import {publicSubstituteOffer} from "../lib/substitute-privacy.js";
 
 test("body presets share the block map and one selected preset creates only one block", () => {
@@ -31,6 +31,13 @@ test("short beginner lesson has usable station timing, no jumps or advanced cata
   assert.ok(plan.sections.length >= 2);
   assert.ok(plan.sections.every(x => !x.detail.includes("0 סבבים")));
   assert.ok(plan.exercises.every(x => x.level === "מתחילים" && !/jump|impact/i.test(x.pattern)));
+});
+
+test("a bike cannot satisfy the equipment requirement of a step-up station", () => {
+  const step = boneExercisesForLevel("מתחילים").find(x => x.id === "bone-step");
+  const bike = {name_he:"אופני כושר", category:"cardio", quantity:8};
+  assert.equal(workoutEquipment(step, [bike]).capacity, 0);
+  assert.equal(workoutEquipment(step, [bike,{name_he:"מדרגה",category:"cardio",quantity:2}]).capacity, 2);
 });
 
 test("only known source links are shown and hidden offers omit all demos", () => {
