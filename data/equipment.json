@@ -182,5 +182,13 @@
     "quantity": 12,
     "details": "הנחת V1: 4 יחידות בכל אחד מהמשקלים 4, 6, 8 ק״ג — יש לאשר",
     "active": true
+  },
+  {
+    "name_he": "בר קבוע בסטודיו",
+    "name_en": "Studio Barre",
+    "category": "bar",
+    "quantity": 1,
+    "details": "14.5 מטר בסך הכול. החלק הנגיש מתאים לעד 7 משתתפות.",
+    "active": true
   }
 ]
