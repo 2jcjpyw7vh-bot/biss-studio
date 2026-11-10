@@ -7,6 +7,7 @@ import {availableExerciseEquipment,equipmentCapacity as familyCapacity,exerciseE
 import ContinuityPanel from "./continuity/ContinuityPanel";
 import TeamPanel from "./team/TeamPanel";
 import SaveWorkoutPanel from "./continuity/SaveWorkoutPanel";
+import ArboxPanel from "./integrations/ArboxPanel";
 
 const structures=["תחנות","סטים וחזרות","סופר סט / Super Fit","AMRAP","EMOM","פירמידה"];
 const levels=["מתחילים","בינוניים","מתקדמים","מעורב"];
@@ -274,10 +275,11 @@ async function addEquipment(e){
 
  return <main className="shell v26-shell">
   <header className="hero v26-main-hero"><div className="brand"><img className="logo" src="/biss-logo.png" alt="BISS"/><div><div className="eyebrow">BISS STUDIO SYSTEM</div><h1>אימון מדויק. פשוט להפעלה.</h1><div className="sub">בנייה, חיפוש, שיתוף ושיעורי בית — במקום אחד.</div></div></div><div className="top-note small">בנוי לצוות הסטודיו: מהיר בטלפון, ברור בזמן שיעור, ומותאם למלאי הציוד.<div><Link className="btn" href="/login">כניסה אישית לצוות</Link></div></div></header>
-  <nav className="tabs v26-tabs" aria-label="ניווט ראשי">{[["builder","בניית אימון"],["continuity","רצף קבוצות"],["team","צוות והרשאות"],["exercises","תרגילים"],["homework","שיעורי בית"],["program","תוכנית"],["equipment","ציוד"]].map(([id,label])=><button key={id} className={tab===id?"active":""} aria-current={tab===id?"page":undefined} onClick={()=>{setTab(id);if(id==="equipment")refreshInventory()}}>{label}</button>)}{workout&&<button className={tab==="workout"?"active":""} onClick={()=>setTab("workout")}>האימון שלי</button>}</nav>
+  <nav className="tabs v26-tabs" aria-label="ניווט ראשי">{[["builder","בניית אימון"],["continuity","רצף קבוצות"],["team","צוות והרשאות"],["exercises","תרגילים"],["homework","שיעורי בית"],["program","תוכנית"],["equipment","ציוד"],["integrations","חיבורים"]].map(([id,label])=><button key={id} className={tab===id?"active":""} aria-current={tab===id?"page":undefined} onClick={()=>{setTab(id);if(id==="equipment")refreshInventory()}}>{label}</button>)}{workout&&<button className={tab==="workout"?"active":""} onClick={()=>setTab("workout")}>האימון שלי</button>}</nav>
 
   {tab==="continuity"&&<ContinuityPanel/>}
   {tab==="team"&&<TeamPanel/>}
+  {tab==="integrations"&&<ArboxPanel/>}
   {tab==="workout"&&workout&&<section className="panel save-workout-shell"><SaveWorkoutPanel workout={workout}/></section>}
 
   {tab==="builder"&&<section className="panel hero-panel v26-builder-panel"><h2>בניית אימון</h2><div className="sub">בחרו סוג אימון. המערכת מתאימה את הקצב לרמה ומתחשבת במלאי ובקיבולת התחנות.</div><div className="v29-workout-types">{workoutTypes.map(type=><button type="button" key={type.id} className={`v29-workout-type ${workoutType===type.id?"selected":""}`} onClick={()=>{setWorkoutType(type.id);if(type.id==="functional-hiit")setStructure("תחנות")}}><strong>{type.label}</strong><span>{type.description}</span></button>)}</div><div className="filters"><MultiChoice label="אזורי גוף — ניתן לבחור כמה" options={allRegions} selected={regions} onChange={setRegions}/><MultiChoice label="משפחות ציוד — ניתן לבחור כמה" options={allEquipment} selected={equipments} onChange={setEquipments}/>{workoutType==="classic"&&<label className="field">מבנה<select value={structure} onChange={e=>setStructure(e.target.value)}>{structures.map(x=><option key={x}>{x}</option>)}</select></label>}<label className="field">רמה<select value={level} onChange={e=>setLevel(e.target.value)}>{levels.map(x=><option key={x}>{x}</option>)}</select></label><label className="field">משתתפות<input type="number" min="1" max="40" value={people} onChange={e=>setPeople(+e.target.value)}/></label><label className="field">משך בדקות<input type="number" min="20" max="90" value={minutes} onChange={e=>setMinutes(+e.target.value)}/></label></div><div className="safe" style={{marginTop:14}}>
