@@ -1,14 +1,26 @@
-import crypto from "crypto";
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../../lib/supabase";
-import {arboxConfiguration} from "../../../../lib/arbox-config";
+import {arboxConfiguration,checkArboxConnection,readArboxSchedule} from "../../../../lib/arbox-config";
 import {verifyAdminPin} from "../../../../lib/admin-pin";
+import {studioProfileFromRequest} from "../../../../lib/studio-auth";
 
 export const dynamic="force-dynamic";
-const safe=(a,b)=>{const A=Buffer.from(String(a||"")),B=Buffer.from(String(b||""));return A.length===B.length&&crypto.timingSafeEqual(A,B)};
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 
 export async function GET(req){
+ if(new URL(req.url).searchParams.get("view")==="schedule"){
+  if(!req.headers.get("authorization"))return reply({error:"לתצוגת הלוח נדרשת כניסה אישית של מנהלת Studio."},401);
+  const db=supabaseAdmin();
+  if(!db)return reply({error:"מסד Studio אינו מחובר"},503);
+  const access=await studioProfileFromRequest(req,db);
+  if(access.error)return reply({error:access.error},access.status);
+  if(access.profile.role!=="manager")return reply({error:"תצוגת הלוח זמינה למנהלות Studio בלבד."},403);
+  const result=await readArboxSchedule();
+  if(result.error==="not_configured")return reply({error:"נדרש מפתח API פעיל בשרת Studio לפני הצגת הלוח."},503);
+  if(result.error==="access_denied")return reply({error:"ארבוקס דחתה את הגישה ללוח. יש לבדוק את המפתח ואת הרשאותיו."},502);
+  if(result.error)return reply({error:"לא ניתן לקרוא כרגע את לוח השיעורים מארבוקס."},502);
+  return reply(result);
+ }
  if(!await verifyAdminPin(req))return reply({error:"נדרש PIN מנהל"},401);
  const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);
  const[groupCount,userCount,sessionCount]=await Promise.all([
@@ -17,8 +29,8 @@ export async function GET(req){
   db.from("biss_sessions").select("id",{count:"exact",head:true}).not("arbox_session_id","is",null)
  ]);
  const error=groupCount.error||userCount.error||sessionCount.error;if(error)return reply({error:"לא ניתן לבדוק מיפויי Arbox"},503);
- return reply({configuration:arboxConfiguration(),mappings:{groups:groupCount.count||0,users:userCount.count||0,sessions:sessionCount.count||0},mode:"readiness_only",writes_enabled:false});
+ const connection=await checkArboxConnection();
+ return reply({configuration:arboxConfiguration(),connection,mappings:{groups:groupCount.count||0,users:userCount.count||0,sessions:sessionCount.count||0},mode:"read_only_check",writes_enabled:false});
 }
-
 
 
