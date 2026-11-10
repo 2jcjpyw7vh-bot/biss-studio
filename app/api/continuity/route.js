@@ -15,7 +15,7 @@ async function snapshot(db){
     db.from("biss_sessions").select("*").order("starts_at",{ascending:false}).limit(80),
     db.from("biss_adaptations").select("*").eq("active",true).order("created_at",{ascending:false}),
     db.from("biss_handoffs").select("*").order("created_at",{ascending:false}).limit(80),
-    db.from("biss_users").select("id,full_name,role,status").eq("role","instructor").eq("status","active").order("full_name")
+    db.from("biss_users").select("id,full_name,role,status").in("role",["manager","instructor"]).eq("status","active").order("full_name")
   ]);
   const error=[groups,sessions,adaptations,handoffs,users].find(result=>result.error)?.error;
   if(error)throw error;
@@ -39,7 +39,7 @@ export async function POST(req){
       if(error)throw error;await writeAudit(db,{action:"group.created",entityType:"group",label:name});
     }else if(body.action==="session"){
       if(!body.group_id||!body.starts_at)return fail("יש לבחור קבוצה ומועד");
-      let instructor_id=clean(body.instructor_id,120)||null,instructor_name=clean(body.instructor_name,120);if(instructor_id){const{data:instructor,error:instructorError}=await db.from("biss_users").select("id,full_name").eq("id",instructor_id).eq("role","instructor").eq("status","active").single();if(instructorError||!instructor)return fail("המדריכה שנבחרה אינה פעילה",409);instructor_name=instructor.full_name}
+      let instructor_id=clean(body.instructor_id,120)||null,instructor_name=clean(body.instructor_name,120);if(instructor_id){const{data:instructor,error:instructorError}=await db.from("biss_users").select("id,full_name").eq("id",instructor_id).in("role",["manager","instructor"]).eq("status","active").single();if(instructorError||!instructor)return fail("המדריכה שנבחרה אינה פעילה",409);instructor_name=instructor.full_name}
       const {error}=await db.from("biss_sessions").insert({group_id:body.group_id,starts_at:new Date(body.starts_at).toISOString(),title:clean(body.title,160)||"אימון קבוצה",instructor_id,instructor_name,workout_summary:clean(body.workout_summary,4000),playlist_url:clean(body.playlist_url,500),status:"planned"});
       if(error)throw error;await writeAudit(db,{action:"session.created",entityType:"session",label:clean(body.title,160)||"אימון קבוצה"});
     }else if(body.action==="adaptation"){
