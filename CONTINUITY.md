@@ -13,7 +13,8 @@
 - Supabase Studio המבודד: `nqpxgxoxxafsrmvfrqnh`, Frankfurt (`eu-central-1`).
 - קומיט פונקציונליות הבידוד: `a9d660264d5ed5698a01e559db5a410c83114ef1`.
 - פריסה מאומתת לאחר מכן: `4e3a424c5bd06223b198b9374347c6b97f7f9ece`, הסתיימה בהצלחה.
-- תיקיית עבודה במחשב הנוכחי: `C:\Users\segal\OneDrive\Documents\ChatGPT\BISS Studio – מערכת לבניית אימונים`.
+- תיקיית עבודה מקומית במחשב הנוכחי: `C:\Users\segal\OneDrive\Documents\ChatGPT\BISS Studio – מערכת לבניית אימונים`.
+- התיקייה נמצאת תחת OneDrive, אך בעת בדיקת הגיבוי לקוח OneDrive לא היה פעיל. לכן הגיבוי המקומי מאומת; סנכרון הענן של הקובץ דורש בדיקה ידנית ואינו מאומת.
 
 הפרויקט הישן `onnecsibxkcdyhbzffgj` משותף עם BISS Vineyard ואינו משמש את Studio. אין לשנות בו טבלאות, חיבורים, הרשאות, סודות או הגדרות.
 
@@ -36,9 +37,9 @@ GitHub `main` הוא מקור הקוד הקובע. ה-Git המקומי ישן ו
 - התמונה כוללת 30 פריטי ציוד, 193 יחידות פעילות, 30 תרגילים, 12 פריטי שיתוף ומנהל אחד.
 - היא אינה כוללת PIN/hash, סודות, Auth users/sessions, `auth_user_id` או נתוני Vineyard.
 - היא כן כוללת שם ואימייל והערות שעשויות להיות רגישות; אין להעלות אותה ל-GitHub או לשתף ללא הצפנה.
-- ZIP ההמשכיות הסופי: `backups/BISS-Studio-continuity-backup-2026-11-10-final.zip`.
-- חתימת התקינות והפירוט: `backups/BISS-Studio-continuity-backup-2026-11-10-final.manifest.md`. יש להשוות SHA-256 לפני שימוש.
-- הקובץ בעל אותו שם ללא `-final` הוא טיוטת ביניים; יש להשתמש רק בקובץ `-final`.
+- ZIP ההמשכיות הסופי והמעודכן: `backups/BISS-Studio-continuity-backup-2026-11-10-r2.zip`.
+- חתימת התקינות והפירוט: `backups/BISS-Studio-continuity-backup-2026-11-10-r2.manifest.md`. יש להשוות SHA-256 לפני שימוש.
+- קבצים בעלי שמות דומים ללא `-r2` הם גרסאות ביניים; יש להשתמש רק בקובץ `-r2`.
 - הקובץ `BISS-Studio-backup-2026-11-10-0835.zip` חלקי ופגום ואסור לשימוש.
 
 ## מה קיים במערכת
