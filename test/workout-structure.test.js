@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {planWorkoutBlocks, planFinisher, planBoneSets, planSupersets, sharedWorkoutPlan, SUPERSET, workoutEquipment, workoutPrescription, workoutSummary} from "../lib/workout-structure.js";
+import {planWorkoutBlocks, planFinisher, planBoneSets, planSupersets, planTimedStructure, sharedWorkoutPlan, workoutTimeline, SUPERSET, workoutEquipment, workoutPrescription, workoutSummary} from "../lib/workout-structure.js";
 
 const bodyweight = "ללא ציוד";
 const exercise = (id, region, equipment = bodyweight) => ({id, he: id, region, equipment});
@@ -91,4 +91,41 @@ test("a 50-minute superset workout specifies pairs, rounds and per-round repetit
   const newShare=sharedWorkoutPlan({meta:`50 דק׳ · ${SUPERSET}`,...plan});
   assert.equal(newShare.legacyTiming,undefined);
   assert.deepEqual(newShare.sections,plan.sections);
+});
+
+test("regular workout structures plan the selected duration and keep the schedule in a share", () => {
+  for (const type of ["classic","functional","functional-hiit"]) {
+    for (const structure of ["תחנות","EMOM","AMRAP","סטים וחזרות","פירמידה"]) {
+      for (const duration of [20,50,90]) {
+        for (const useFinisher of [false,true]) {
+          const warm=duration<30?4:6;
+          const cool=duration<30?3:5;
+          const finisher=useFinisher?planFinisher(core,duration,0):null;
+          const main=duration-warm-cool-(finisher?.minutes||0);
+          const exercises=[...upper,...lower].slice(0,structure==="פירמידה"?Math.min(6,Math.floor(main/3)):6);
+          const plan=planTimedStructure(exercises,main,structure,type,"מתחילים");
+          const workout={durationMinutes:duration,structure,type,warm:[`${warm} דק׳`],cool:[`${cool} דק׳`],
+            exercises:[...plan.exercises,...(finisher?.exercises||[])],
+            sections:[...plan.sections,...(finisher?[{...finisher.section,start:exercises.length}]:[])]};
+          assert.deepEqual(workoutTimeline(workout),{warm,main,finisher:finisher?.minutes||0,transition:0,cool});
+          assert.deepEqual(sharedWorkoutPlan(workout).sections,workout.sections);
+          assert.ok(plan.exercises.every(x=>x.prescription && !x.prescription.startsWith("0 ")));
+          if (structure==="סטים וחזרות"||structure==="פירמידה") {
+            assert.equal(plan.exercises.reduce((sum,x)=>sum+Number.parseInt(x.prescription,10),0),main);
+          }
+        }
+      }
+    }
+  }
+});
+
+test("short interval plans use the rounds that fit and EMOM numbers each minute", () => {
+  const exercises=[...upper,...lower];
+  const stationPlan=planTimedStructure(exercises,11,"תחנות","classic","מעורב");
+  assert.match(stationPlan.sections[0].detail,/8 דק׳ בסבבים · 1 סבב[\s\S]*3 דק׳ להדגמה/);
+  const emom=planTimedStructure(exercises,39,"EMOM","functional-hiit","מתחילים");
+  assert.match(emom.sections[0].detail,/24 דק׳ בסבבים · 3 סבבים/);
+  assert.match(emom.exercises[7].prescription,/דקה 8 בכל סבב/);
+  const mixed=planTimedStructure(exercises.slice(0,6),39,"EMOM","classic","מעורב");
+  assert.match(mixed.sections[0].detail,/30 דק׳ בסבבים · 5 סבבים[\s\S]*9 דק׳ להדגמה/);
 });
