@@ -31,7 +31,15 @@ export async function POST(req) {
     if (!fields || typeof body.id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.id)) {
       return reply({error:"לא התקבל אימון תקין לשמירה"}, 400);
     }
-    const {error} = await library.upsert({owner_id:owner, id:body.id, workout_payload:fields.workout_payload}, {onConflict:"owner_id,id"});
+    const workout = fields.workout_payload;
+    for (const [index, exercise] of workout.exercises.entries()) {
+      const original = body.workout.exercises[index];
+      if (Number.isInteger(original?.supersetGroup) && ["A","B"].includes(original.supersetSlot)) {
+        exercise.supersetGroup = original.supersetGroup;
+        exercise.supersetSlot = original.supersetSlot;
+      }
+    }
+    const {error} = await library.upsert({owner_id:owner, id:body.id, workout_payload:workout}, {onConflict:"owner_id,id"});
     if (error) return reply({error:"האימון לא נשמר. אפשר לנסות שוב."}, 503);
     return reply({id:body.id});
   });

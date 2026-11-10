@@ -43,8 +43,11 @@ export default function SavedWorkoutLibrary({client}) {
       {plan.exercises.map((exercise,index) => {
         const section = plan.sections.find(item => item.start === index);
         return <Fragment key={index}>
-          {section && <><h4>{section.title}</h4><p className="small">{section.detail}</p></>}
+          {section && <><h4>{section.title}</h4><p className="small">{section.detail}</p>
+            {section.title.startsWith("בלוק 2") && plan.transitionMinutes > 0 && <p className="small">{plan.transitionMinutes} דק׳ מעבר בין הבלוקים</p>}</>}
           <p><strong>{index + 1}. {exercise.he}</strong> · {exercise.prescription}<br/>{exercise.cue} {exercise.allocation}
+          {exercise.equipment && <span className="small"> · {exercise.equipment}</span>}
+          {exercise.supersetGroup && <span className="small"> · סופר סט {exercise.supersetGroup}{exercise.supersetSlot}</span>}
           {exercise.id && <> · <Link href={`/exercise/${encodeURIComponent(exercise.id)}`} target="_blank" rel="noopener noreferrer">פתיחת תרגיל</Link></>}</p>
         </Fragment>;
       })}
