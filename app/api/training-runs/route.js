@@ -1,0 +1,32 @@
+import {NextResponse} from "next/server";
+import {supabaseAdmin} from "../../../lib/supabase";
+import {studioProfileFromRequest} from "../../../lib/studio-auth";
+import {selfServiceAccess} from "../../../lib/self-service-access";
+
+export const dynamic="force-dynamic";
+const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
+async function authorizedProgram(db,profile,programId,sessionIndex){
+ const{data:program,error}=await db.from("biss_programs").select("id,trainee_id,coach_id,program_payload,equipment_access,status,approved_at,starts_on,ends_on").eq("id",programId).eq("trainee_id",profile.id).single();
+ const sessions=Array.isArray(program?.program_payload?.sessions)?program.program_payload.sessions:[];
+ if(error||!program||!sessions[sessionIndex]||!selfServiceAccess(profile,program).equipment)return null;
+ return program;
+}
+export async function POST(req){
+ const db=supabaseAdmin();if(!db)return reply({error:"שירות Studio אינו מחובר"},503);
+ const{profile,error,status}=await studioProfileFromRequest(req,db);if(error)return reply({error},status);if(profile.role!=="trainee")return reply({error:"אזור זה מיועד למתאמנות"},403);
+ const body=await req.json(),programId=String(body.program_id||""),sessionIndex=Number(body.session_index);
+ if(body.action==="start"){
+  if(!Number.isInteger(sessionIndex)||sessionIndex<0)return reply({error:"אימון לא תקין"},400);
+  if(!await authorizedProgram(db,profile,programId,sessionIndex))return reply({error:"האימון אינו מאושר"},403);
+  const recent=new Date(Date.now()-6*60*60*1000).toISOString();const{data:existing}=await db.from("biss_training_runs").select("id,started_at").eq("trainee_id",profile.id).eq("program_id",programId).eq("session_index",sessionIndex).eq("status","in_progress").gte("started_at",recent).order("started_at",{ascending:false}).limit(1).maybeSingle();if(existing)return reply({run:existing,reused:true});
+  await db.from("biss_training_runs").update({status:"abandoned"}).eq("trainee_id",profile.id).eq("program_id",programId).eq("session_index",sessionIndex).eq("status","in_progress").lt("started_at",recent);
+  const{data:run,error:insertError}=await db.from("biss_training_runs").insert({trainee_id:profile.id,program_id:programId,session_index:sessionIndex,status:"in_progress"}).select("id,started_at").single();if(insertError)return reply({error:"לא ניתן להתחיל מעקב אימון"},503);return reply({run,reused:false});
+ }
+ if(body.action==="complete"){
+  const runId=String(body.run_id||"");if(!runId)return reply({error:"חסר רישום אימון"},400);
+  const{data:run,error:readError}=await db.from("biss_training_runs").select("id,started_at").eq("id",runId).eq("trainee_id",profile.id).eq("status","in_progress").single();if(readError||!run)return reply({error:"רישום האימון אינו פעיל"},409);
+  const now=new Date(),duration=Math.min(21600,Math.max(0,Math.floor((now-new Date(run.started_at))/1000)));const{data:completed,error:updateError}=await db.from("biss_training_runs").update({status:"completed",completed_at:now.toISOString(),duration_seconds:duration}).eq("id",run.id).eq("trainee_id",profile.id).eq("status","in_progress").select("id,duration_seconds,completed_at").maybeSingle();if(updateError||!completed)return reply({error:"לא ניתן להשלים את האימון"},409);return reply({run:completed});
+ }
+ return reply({error:"פעולה לא מוכרת"},400);
+}
+
