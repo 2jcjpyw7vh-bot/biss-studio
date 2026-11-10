@@ -1,7 +1,7 @@
 "use client";
 import {useMemo,useState} from "react";
 const roles={manager:"מנהלת",instructor:"מדריכה",trainee:"מתאמנת"};
-const actionLabels={"group.created":"קבוצה נוצרה","session.created":"אימון תוכנן","adaptation.created":"התאמה נוספה","handoff.created":"עדכון למדריכה נשמר","workout.attached":"אימון נשמר לקבוצה","user.created":"משתמשת נוספה","user.updated":"הרשאות משתמשת עודכנו","user.invited":"הזמנת כניסה נשלחה","substitute_offer.created":"הצעת החלפה נוצרה","substitute_offer.accepted":"הצעת החלפה אושרה","substitute_offer.declined":"הצעת החלפה נדחתה","substitute_offer.cancelled":"הצעת החלפה בוטלה","equipment.created":"פריט ציוד נוסף","equipment.updated":"מלאי ציוד עודכן","equipment.deleted":"פריט ציוד נמחק"};
+const actionLabels={"group.created":"קבוצה נוצרה","session.created":"אימון תוכנן","adaptation.created":"התאמה נוספה","handoff.created":"עדכון למדריכה נשמר","workout.attached":"אימון נשמר לקבוצה","program.assigned":"תוכנית אישית נשמרה","user.created":"משתמשת נוספה","user.updated":"הרשאות משתמשת עודכנו","user.invited":"הזמנת כניסה נשלחה","substitute_offer.created":"הצעת החלפה נוצרה","substitute_offer.accepted":"הצעת החלפה אושרה","substitute_offer.declined":"הצעת החלפה נדחתה","substitute_offer.cancelled":"הצעת החלפה בוטלה","equipment.created":"פריט ציוד נוסף","equipment.updated":"מלאי ציוד עודכן","equipment.deleted":"פריט ציוד נמחק"};
 const areas={all:"הכול",equipment:"מלאי וציוד",team:"צוות והחלפות",training:"קבוצות ואימונים"};
 const area=a=>a.startsWith("equipment.")?"equipment":a.startsWith("user.")||a.startsWith("substitute_offer.")?"team":"training";
 const statuses={pending:"ממתינה",accepted:"אושרה",declined:"נדחתה",cancelled:"בוטלה",expired:"פג תוקף"};
