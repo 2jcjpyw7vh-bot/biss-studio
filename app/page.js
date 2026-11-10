@@ -177,7 +177,7 @@ export default function Home(){
    const duration=Math.max(20,Math.min(90,Math.round(minutes)||50));
    const participants=Math.max(1,Math.min(40,Math.round(people)||1));
    const preferLevel=items=>rand(items).sort((a,b)=>level==="מעורב"?0:Number(b.level===level)-Number(a.level===level));
-   const finisherPool=includeFinisher?preferLevel(exerciseLibrary.filter(x=>!exerciseIssues(x))):[];
+   const finisherPool=includeFinisher?preferLevel(exerciseLibrary.filter(x=>exerciseIssues(x).length===0)):[];
    let pool=filtered.filter(x=>!["שחרור","מוביליטי","מתיחות"].includes(x.goal)&&workoutEquipment(x,inventory).capacity>0);
    const blockPlan=structure===BLOCKS
      ? planWorkoutBlocks({pool:preferLevel(pool),inventory,people:participants,minutes:duration,level,type:workoutType,finisherPool})
