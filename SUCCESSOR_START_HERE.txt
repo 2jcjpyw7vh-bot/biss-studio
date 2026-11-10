@@ -14,7 +14,7 @@ BISS STUDIO — START HERE / מתחילים כאן
    - docs/RECOVERY_RUNBOOK.md
    - docs/DATA_BACKUP_RUNBOOK.md
    - reports/QA-2026-11-10.md
-8. הגיבוי המקומי הסופי נמצא ב-backups/BISS-Studio-continuity-backup-2026-11-10-r2.zip. חתימת התקינות שלו נמצאת בקובץ ה-manifest בעל אותו שם.
+8. גיבוי הקוד והתיעוד המקומי הסופי נמצא ב-backups/BISS-Studio-continuity-backup-2026-11-10-r3.zip. חתימות התקינות והפניה לקבצים הפרטיים נמצאות בקובץ ה-manifest בעל אותו שם.
 9. אין לשלוח או לשמור במייל/צ'אט/GitHub סיסמאות, PIN, מפתחות API, קודי אימות או מידע רפואי מזוהה.
 10. אם חסרה גישה לחשבון, פעל דרך הליך הירושה/השחזור הרשמי של הספק. אל תפתח פרויקט חלופי ואל תחבר מחדש שירותים לפני שהבנת את המצב.
 
@@ -26,3 +26,7 @@ C:\Users\segal\OneDrive\Documents\ChatGPT\BISS Studio – מערכת לבניי�
 המסמך המלא שמסביר מי רואה מה ואיפה שומרים הרשאות:
 docs/SUCCESSION_AND_ACCESS.md
 
+פרטי היורש המורשה וסטטוס ההזמנות נשמרים מקומית בלבד:
+backups/PRIVATE_SUCCESSOR_REGISTRY.md
+
+נשלחו הזמנה למאגר GitHub והזמנת מנהל לאפליקציית Studio. שתיהן ממתינות לקבלה ולבדיקת כניסה ראשונה. גישת Vercel ו-Supabase Dashboard נדחתה עד שיהיה ניתן להגביל אותה בבטחה ל-Studio בלבד.
