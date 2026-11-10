@@ -14,7 +14,7 @@ export default function SubstituteOffer(){
   <div className="eyebrow">BISS STUDIO · הצעת החלפה</div>
   <h1>{s.biss_groups?.name||"קבוצה"} · {s.title}</h1>
   <div className="sub">{new Date(s.starts_at).toLocaleString("he-IL")}</div>
-  {data.show_workout?<div className="safe"><strong>האימון כבר מוכן</strong><p>{s.workout_summary||"תוכנית האימון תעודכן לפני מועד האימון."}</p></div>:<div className="notice"><strong>פרטי האימון שמורים בסטודיו</strong><p>תוכנית האימון והפלייליסט יימסרו לאחר אישור השיבוץ.</p></div>}
+  {data.show_workout?<div className="safe"><strong>האימון כבר מוכן</strong><p style={{whiteSpace:"pre-line"}}>{s.workout_summary||"תוכנית האימון תעודכן לפני מועד האימון."}</p></div>:<div className="notice"><strong>פרטי האימון שמורים בסטודיו</strong><p>תוכנית האימון והפלייליסט יימסרו לאחר אישור השיבוץ.</p></div>}
   {s.playlist_url&&<a className="btn" href={s.playlist_url} target="_blank" rel="noreferrer">פתיחת הפלייליסט</a>}
   {data.message&&<p>{data.message}</p>}
   {active?<div className="row"><button className="btn primary" onClick={()=>decide("accepted")}>מתאימה לי — אישור</button><button className="btn" onClick={()=>decide("declined")}>לא מתאימה הפעם</button></div>:<div className="notice">{finalMessages[state]||"ההצעה אינה פעילה."}</div>}
@@ -22,4 +22,3 @@ export default function SubstituteOffer(){
   <div className="small">שמות מתאמנות ומידע רפואי אינם מוצגים בקישור זה.</div>
  </section></main>
 }
-
