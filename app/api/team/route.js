@@ -21,6 +21,11 @@ export async function POST(req){if(!admin(req))return reply({error:"PIN שגוי
   await writeAudit(db,{action:"user.updated",entityType:"user",entityId:id,label:current.full_name,metadata:{role,status}})
  }
  else if(b.action==="offer"){if(!b.session_id||!b.instructor_id)return reply({error:"יש לבחור אימון ומדריכה"},400);const{data:offer,error}=await db.from("biss_substitute_offers").upsert({session_id:b.session_id,instructor_id:b.instructor_id,status:"pending",message:clean(b.message,1200),show_workout:String(b.show_workout)==="true",responded_at:null},{onConflict:"session_id,instructor_id"}).select("id,token").single();if(error)throw error;await writeAudit(db,{action:"substitute_offer.created",entityType:"offer",entityId:offer.id,label:"הצעת החלפה",metadata:{status:"pending"}});const base=(process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000").replace(/\/$/,"");return reply({...await snapshot(db),share_url:`${base}/substitute/${offer.token}`})}
+ else if(b.action==="cancel_offer"){
+  const id=clean(b.id,120);if(!id)return reply({error:"חסרה הצעת החלפה"},400);
+  const{data:offer,error}=await db.from("biss_substitute_offers").update({status:"cancelled",responded_at:new Date().toISOString()}).eq("id",id).eq("status","pending").select("id").maybeSingle();if(error)throw error;if(!offer)return reply({error:"ההצעה כבר נענתה או בוטלה"},409);
+  await writeAudit(db,{action:"substitute_offer.cancelled",entityType:"offer",entityId:id,label:"הצעת החלפה בוטלה",metadata:{status:"cancelled"}})
+ }
  else return reply({error:"פעולה לא מוכרת"},400);return reply(await snapshot(db));
  }catch(error){console.error("Studio team error",error);return reply({error:"השמירה נכשלה"},500)}}
 
