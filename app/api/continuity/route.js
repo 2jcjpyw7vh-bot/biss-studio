@@ -1,12 +1,10 @@
 import {NextResponse} from "next/server";
-import crypto from "crypto";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {writeAudit} from "../../../lib/audit";
+import {verifyAdminPin} from "../../../lib/admin-pin";
 
 export const dynamic="force-dynamic";
 const noStore={"Cache-Control":"no-store, max-age=0"};
-const safeEqual=(a,b)=>{const A=Buffer.from(String(a||"")),B=Buffer.from(String(b||""));return A.length===B.length&&crypto.timingSafeEqual(A,B)};
-const authorized=req=>Boolean(process.env.ADMIN_PIN)&&safeEqual(req.headers.get("x-admin-pin"),process.env.ADMIN_PIN);
 const clean=(value,max=500)=>String(value||"").trim().slice(0,max);
 const fail=(message,status=400)=>NextResponse.json({error:message},{status,headers:noStore});
 
@@ -24,13 +22,13 @@ async function snapshot(db){
 }
 
 export async function GET(req){
-  if(!authorized(req))return fail("נדרש PIN מנהל לצפייה במידע הפנימי",401);
+  if(!await verifyAdminPin(req))return fail("נדרש PIN מנהל לצפייה במידע הפנימי",401);
   const db=supabaseAdmin();if(!db)return fail("מסד הנתונים של Studio אינו מחובר",503);
   try{return NextResponse.json(await snapshot(db),{headers:noStore})}catch(error){return fail("לא ניתן לטעון את רצף האימונים",503)}
 }
 
 export async function POST(req){
-  if(!authorized(req))return fail("PIN שגוי",401);
+  if(!await verifyAdminPin(req))return fail("PIN שגוי",401);
   const db=supabaseAdmin();if(!db)return fail("מסד הנתונים של Studio אינו מחובר",503);
   let body;try{body=await req.json()}catch{return fail("בקשה לא תקינה")}
   try{
@@ -62,4 +60,6 @@ export async function POST(req){
     return NextResponse.json(await snapshot(db),{headers:noStore});
   }catch(error){console.error("Studio continuity error",error);return fail("השמירה במסד נכשלה",500)}
 }
+
+
 
