@@ -14,12 +14,14 @@ BISS STUDIO — START HERE / מתחילים כאן
    - docs/RECOVERY_RUNBOOK.md
    - docs/DATA_BACKUP_RUNBOOK.md
    - reports/QA-2026-11-10.md
-8. הגיבוי המקומי הסופי נמצא ב-backups/BISS-Studio-continuity-backup-2026-11-10-final.zip. חתימת התקינות שלו נמצאת בקובץ ה-manifest בעל אותו שם.
+8. הגיבוי המקומי הסופי נמצא ב-backups/BISS-Studio-continuity-backup-2026-11-10-r2.zip. חתימת התקינות שלו נמצאת בקובץ ה-manifest בעל אותו שם.
 9. אין לשלוח או לשמור במייל/צ'אט/GitHub סיסמאות, PIN, מפתחות API, קודי אימות או מידע רפואי מזוהה.
 10. אם חסרה גישה לחשבון, פעל דרך הליך הירושה/השחזור הרשמי של הספק. אל תפתח פרויקט חלופי ואל תחבר מחדש שירותים לפני שהבנת את המצב.
 
 תיקיית העבודה במחשב שבו נוצר הגיבוי:
 C:\Users\segal\OneDrive\Documents\ChatGPT\BISS Studio – מערכת לבניית אימונים
+
+בעת יצירת הגיבוי לקוח OneDrive לא היה פעיל. הקובץ המקומי תקין, אך יש לוודא ידנית שהוא סונכרן או להעתיק עותק מוצפן למקום נוסף.
 
 המסמך המלא שמסביר מי רואה מה ואיפה שומרים הרשאות:
 docs/SUCCESSION_AND_ACCESS.md
