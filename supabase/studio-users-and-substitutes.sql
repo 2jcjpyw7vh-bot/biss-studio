@@ -7,6 +7,8 @@ create table if not exists public.biss_users (
 create unique index if not exists biss_users_email_unique on public.biss_users(lower(email)) where email<>'';
 alter table public.biss_users add column if not exists auth_user_id uuid references auth.users(id) on delete set null;
 create unique index if not exists biss_users_auth_user_id_unique on public.biss_users(auth_user_id) where auth_user_id is not null;
+alter table public.biss_sessions add column if not exists instructor_id uuid references public.biss_users(id) on delete set null;
+create index if not exists biss_sessions_instructor_idx on public.biss_sessions(instructor_id,starts_at);
 create table if not exists public.biss_substitute_offers (
   id uuid primary key default gen_random_uuid(), session_id uuid not null references public.biss_sessions(id) on delete cascade,
   instructor_id uuid not null references public.biss_users(id) on delete cascade, token uuid not null default gen_random_uuid() unique,
