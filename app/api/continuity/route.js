@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {writeAudit} from "../../../lib/audit";
 import {verifyAdminPin} from "../../../lib/admin-pin";
+import {publicWorkoutSections,workoutSummary} from "../../../lib/workout-structure";
 
 export const dynamic="force-dynamic";
 const noStore={"Cache-Control":"no-store, max-age=0"};
@@ -52,14 +53,11 @@ export async function POST(req){
     }else if(body.action==="attach_workout"){
       if(!body.session_id||!body.workout||typeof body.workout!=="object")return fail("חסר אימון או שיבוץ");
       const workout=body.workout,exercises=Array.isArray(workout.exercises)?workout.exercises.slice(0,20):[];
-      const summary=[clean(workout.title,180),clean(workout.meta,300),...exercises.map((x,i)=>`${i+1}. ${clean(x.he,100)} — ${clean(x.prescription,180)}`)].filter(Boolean).join("\n");
-      const safePayload={title:clean(workout.title,180),meta:clean(workout.meta,300),musicUrl:clean(workout.musicUrl,500),musicTitle:clean(workout.musicTitle,120),warm:Array.isArray(workout.warm)?workout.warm.slice(0,10):[],exercises:exercises.map(x=>({id:clean(x.id,100),he:clean(x.he,120),en:clean(x.en,120),equipment:clean(x.equipment,120),level:clean(x.level,40),prescription:clean(x.prescription,200),cue:clean(x.cue,300),allocation:clean(x.allocation,300)})),cool:Array.isArray(workout.cool)?workout.cool.slice(0,10):[]};
+      const safePayload={title:clean(workout.title,180),meta:clean(workout.meta,300),sections:publicWorkoutSections(workout,exercises.length),transitionMinutes:workout.transitionMinutes===2?2:0,musicUrl:clean(workout.musicUrl,500),musicTitle:clean(workout.musicTitle,120),warm:Array.isArray(workout.warm)?workout.warm.slice(0,10):[],exercises:exercises.map(x=>({id:clean(x.id,100),he:clean(x.he,120),en:clean(x.en,120),equipment:clean(x.equipment,120),level:clean(x.level,40),prescription:clean(x.prescription,200),cue:clean(x.cue,300),allocation:clean(x.allocation,300)})),cool:Array.isArray(workout.cool)?workout.cool.slice(0,10):[]};
+      const summary=workoutSummary(safePayload);
       const{data:current,error:readError}=await db.from("biss_sessions").select("workout_version").eq("id",body.session_id).single();if(readError)throw readError;
       const version=Number(current.workout_version||0)+1;const{error}=await db.from("biss_sessions").update({workout_summary:summary,workout_payload:safePayload,workout_version:version,workout_saved_at:new Date().toISOString()}).eq("id",body.session_id);if(error)throw error;await writeAudit(db,{action:"workout.attached",entityType:"session",entityId:body.session_id,label:clean(workout.title,180),metadata:{version}});
     }else return fail("פעולה לא מוכרת");
     return NextResponse.json(await snapshot(db),{headers:noStore});
   }catch(error){console.error("Studio continuity error",error);return fail("השמירה במסד נכשלה",500)}
 }
-
-
-
