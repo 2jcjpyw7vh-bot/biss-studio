@@ -35,7 +35,8 @@ begin
   end if;
 
   if p_decision='accepted' then
-    if exists(select 1 from public.biss_substitute_offers o where o.session_id=target_session and o.status='accepted') then
+    if exists(select 1 from public.biss_substitute_offers o where o.session_id=target_session and o.status='accepted')
+      or exists(select 1 from public.biss_recruitment_applications a where a.approved_ids @> array[target_session]) then
       return query select 'closed'::text, selected_offer.id;
       return;
     end if;
@@ -82,7 +83,8 @@ begin
     return query select 'invalid_instructor'::text,null::uuid,null::uuid;
     return;
   end if;
-  if exists(select 1 from public.biss_substitute_offers o where o.session_id=p_session and o.status='accepted') then
+  if exists(select 1 from public.biss_substitute_offers o where o.session_id=p_session and o.status='accepted')
+    or exists(select 1 from public.biss_recruitment_applications a where a.approved_ids @> array[p_session]) then
     return query select 'already_assigned'::text,null::uuid,null::uuid;
     return;
   end if;
