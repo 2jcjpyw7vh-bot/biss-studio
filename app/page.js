@@ -17,6 +17,8 @@ import ProgramResult from "./programs/ProgramResult";
 import {programPlaylistUrl,programSessionWorkout} from "../lib/program-session";
 import {rememberWorkout,workoutDraft} from "./workout-navigation";
 import WorkoutTiming from "./WorkoutTiming";
+import StationRotation from "./StationRotation";
+import {planStationRotation} from "../lib/station-rotation";
 
 const levels=["מתחילים","בינוניים","מתקדמים","מעורב"];
 const workoutTypes=[
@@ -242,7 +244,7 @@ export default function Home(){
      if(level==="מתקדמים")setLevel("בינוניים");
    }
  }
- function showWorkout({duration,participants,equipment,exercises,sections,warm,cool,warnings,transitionMinutes}){
+ function showWorkout({duration,participants,equipment,exercises,sections,warm,cool,warnings,transitionMinutes,stationRotation}){
    const type=workoutTypes.find(x=>x.id===workoutType);
    setAlternatives({});
    setWorkout({
@@ -251,7 +253,7 @@ export default function Home(){
      meta:`${duration} דק׳ · ${participants} משתתפות · ${structure} · ${level} · ${equipment}`,
      limitations:[...limitations],limitationLabels:limitationProfiles.filter(p=>limitations.includes(p.id)).map(p=>p.label),limitationNote,
      musicUrl:normalizeUrl(musicUrl),musicTitle:musicTitle||"מוזיקה לאימון",
-     type:workoutType,level,structure,durationMinutes:duration,warm,exercises,sections,cool,warnings,transitionMinutes
+     type:workoutType,level,structure,durationMinutes:duration,warm,exercises,sections,cool,warnings,transitionMinutes,stationRotation
    });
    setTab("workout");
  }
@@ -290,27 +292,47 @@ export default function Home(){
    }
    const pyramidBudget=duration-warmMinutes-coolMinutes-(includeFinisher?(duration<30?2:4):0);
    const targetCount=Math.min(bone?Math.min(6,Math.floor(strengthMinutes/3)):structure==="תחנות"?8:structure==="פירמידה"?Math.min(6,Math.floor(pyramidBudget/3)):6,pool.length);
+   const useRotation=!bone&&structure==="תחנות";
    const chosen=blockPlan?[]:structure===SUPERSET
      ? buildSupersetSelection(pool)
-     : buildBalancedSelection(pool,targetCount);
+     : buildBalancedSelection(pool,useRotation?pool.length:targetCount);
+   const supplement=useRotation&&equipments.length
+     ? preferLevel(catalog.filter(x=>x.equipment==="ללא ציוד"&&matchesRegion(x.region)&&
+       !["שחרור","מוביליטי","מתיחות"].includes(x.goal)&&!exerciseIssues(x).length&&!chosen.some(y=>y.id===x.id)))
+     : [];
+   const rotationPool=useRotation?[...chosen,...supplement]:[];
    const boneSets=bone&&!blockPlan?planBoneSets(chosen,strengthMinutes,level):null;
-   const stations=(boneSets?.exercises||chosen).map(x=>{
+   const stations=(useRotation?[]:(boneSets?.exercises||chosen)).map(x=>{
      const {capacity}=workoutEquipment(x,inventory);
      return {...x,
        allocation:capacity<participants?`יש ${capacity} יח׳ ממשפחת ${exerciseEquipmentLabel(x.equipment,inventory)} לכ־${participants} משתתפות — נדרשת רוטציה או חלופה.`:""};
    });
-   const finisher=blockPlan?null:bone?boneFinish:planFinisher(finisherPool.filter(x=>!chosen.some(y=>y.id===x.id)),duration,stations.length);
+   const rotationPreview=useRotation?planStationRotation(rotationPool,inventory,participants,duration-warmMinutes-coolMinutes,workoutType,level):null;
+   if(useRotation&&!rotationPreview){
+     alert("לא ניתן לשבץ את כל המשתתפות לפי הציוד, הבחירה והזמן. הגדילי את משך האימון, הרחיבי את הבחירה או הקטיני את הקבוצה.");
+     return;
+   }
+   const selectedStations=rotationPreview?.exercises||stations;
+   const finisher=blockPlan?null:bone?boneFinish:planFinisher(finisherPool.filter(x=>!selectedStations.some(y=>y.id===x.id)),duration,selectedStations.length);
    const mainMinutes=duration-warmMinutes-coolMinutes-(finisher?.minutes||0);
+   const rotationPlan=useRotation&&finisher
+     ? planStationRotation(rotationPool,inventory,participants,mainMinutes,workoutType,level)
+     : rotationPreview;
+   if(useRotation&&!rotationPlan){
+     alert("הרוטציה אינה נכנסת בזמן שנותר עם הפינישר. הגדילי את משך האימון או הסירי את הפינישר.");
+     return;
+   }
    const mainDetail=boneSets?.preparationMinutes? `${mainMinutes} דק׳ · ${boneSets.preparationMinutes} דק׳ הכנה ותרגול טכניקה, ואז התרגילים לפי הזמנים הרשומים` : `${mainMinutes} דק׳ · כולל הדגמה, עבודה, מנוחה ומעברים`;
-   const timedPlan=bone||blockPlan?null:structure===SUPERSET
+   const timedPlan=rotationPlan||(bone||blockPlan?null:structure===SUPERSET
      ? planSupersets(stations,mainMinutes,workoutType,level)
-     : planTimedStructure(stations,mainMinutes,structure,workoutType,level);
+     : planTimedStructure(stations,mainMinutes,structure,workoutType,level));
    const mainSections=timedPlan?.sections||(stations.length?[{start:0,title:bone?"עבודת התנגדות":"חלק מרכזי",detail:mainDetail}]:[]);
-   const sections=blockPlan?.sections||[...mainSections,...(finisher?[{...finisher.section,start:stations.length}]:[])];
+   const sections=blockPlan?.sections||[...mainSections,...(finisher?[{...finisher.section,start:selectedStations.length}]:[])];
    const exercises=blockPlan?.exercises||[...(timedPlan?.exercises||stations),...(finisher?.exercises||[])];
-   const warnings=blockPlan?.warnings||(!stations.length?["לא נמצאו תרגילים מרכזיים מתאימים לפי הבחירה והמלאי. נסו להרחיב את הסינון."]:[]);
+   const warnings=blockPlan?.warnings||(!selectedStations.length?["לא נמצאו תרגילים מרכזיים מתאימים לפי הבחירה והמלאי. נסו להרחיב את הסינון."]:[]);
+   if(rotationPlan?.exercises.some(exercise=>supplement.some(item=>item.id===exercise.id)))warnings.push("נוספו תחנות ללא ציוד כדי להשלים את שיבוץ המשתתפות.");
    if(includeFinisher&&!(blockPlan?blockPlan.finisherMinutes:finisher))warnings.push(bone?"לא נמצאה אפשרות מתאימה לסיום הקבוצתי.":"לא נמצאו תרגילי ליבה מתאימים לפינישר קבוצתי ללא ציוד.");
-   if(!(blockPlan?sections.some(x=>x.title.startsWith("בלוק")):stations.length)){
+   if(!(blockPlan?sections.some(x=>x.title.startsWith("בלוק")):selectedStations.length)){
      alert(warnings.join("\n"));
      return;
    }
@@ -318,7 +340,7 @@ export default function Home(){
    if(!blockPlan&&!bone)warm.unshift(`${warmMinutes} דק׳ לחימום`);
    const cool=blockPlan||bone?[`${coolMinutes} דק׳ · הורדת דופק, נשימה ומוביליטי עדין`]:["הורדת דופק ונשימה","מתיחות ומוביליטי עדינים לפי האזורים שעבדו"];
    if(!blockPlan&&!bone)cool.unshift(`${coolMinutes} דק׳ לשחרור`);
-   showWorkout({duration,participants,equipment:equipmentLabel,exercises,sections,warm,cool,warnings,transitionMinutes:blockPlan?.transition||0});
+   showWorkout({duration,participants,equipment:equipmentLabel,exercises,sections,warm,cool,warnings,transitionMinutes:blockPlan?.transition||0,stationRotation:rotationPlan?.stationRotation});
  }
  function buildHomework(){
    let pool=exerciseLibrary.filter(x=>matchesRegion(x)&&matchesEquipment(x)&&x.goal===homeGoal);
@@ -422,7 +444,7 @@ async function addEquipment(e){
 
   {tab==="program"&&<section className="panel"><h2>תוכנית רב־שבועית</h2><div className="sub">בסיס לתוכנית עם התקדמות שבועית. המדריכה עוברת על התוכנית לפני שימוש.</div><div className="filters"><MultiChoice label="אזור — בחירה מרובה" options={allRegions} selected={regions} onChange={setRegions}/><MultiChoice label="ציוד — בחירה מרובה" options={allEquipment} selected={equipments} onChange={setEquipments}/><label className="field">שבועות<input type="number" min="2" max="12" value={programWeeks} onChange={e=>setProgramWeeks(+e.target.value)}/></label><label className="field">אימונים בשבוע<input type="number" min="1" max="5" value={programFreq} onChange={e=>setProgramFreq(+e.target.value)}/></label></div><div className="music"><strong>פלייליסט ברירת מחדל לתוכנית</strong><div className="filters"><label className="field">שם הפלייליסט<input maxLength={120} value={programMusic.musicTitle} onChange={e=>setProgramMusic({...programMusic,musicTitle:e.target.value})}/></label><label className="field">קישור לפלייליסט<input type="url" maxLength={500} value={programMusic.musicUrl} onChange={e=>setProgramMusic({...programMusic,musicUrl:e.target.value})}/></label></div></div><div className="row"><button className="btn primary" onClick={buildProgram}>{program?"צרי תוכנית חדשה":"צרי תוכנית"}</button>{program&&<button className="btn" onClick={()=>setTab("programResult")}>חזרה לתוכנית שבניתי</button>}<SaveProgramPanel/></div></section>}
 
-  {tab==="workout"&&workout&&<section className="panel"><div className="row between v25-workout-head"><div><div className="v25-eyebrow">BISS WORKOUT</div><h2>{workout.title}</h2><strong>משך כולל: {workout.durationMinutes} דק׳</strong><WorkoutTiming workout={workout}/><div className="sub">{workout.meta}</div></div><div className="v25-alt-wrap"><button className="btn v25-alt-btn" onClick={buildWorkout}>צור אימון חלופי</button><span className="small">אותם פרמטרים, שילוב תרגילים חדש</span></div></div>{workout.type===BONE_TYPE&&<p className="notice">{BONE_NOTICE}</p>}{workout.type===BARRE_TYPE&&<p className="notice">{BARRE_NOTICE}</p>}{workout.limitationLabels?.length>0&&<div className="safe" style={{margin:"12px 0"}}><strong>התאמות פעילות:</strong> {workout.limitationLabels.join(" · ")}{workout.limitationNote&&<div className="small">הערת מדריכה: {workout.limitationNote}</div>}</div>}{workout.musicUrl&&<div className="music">🎧 <a href={workout.musicUrl} target="_blank" rel="noreferrer">פתחי ב-Spotify · {workout.musicTitle}</a></div>}<div className="section-title v25-section-title"><span className="dot blue"/><strong>חימום</strong><span className="v25-count">{workout.warm.length} שלבים</span></div>{workout.warm.map((x,i)=><div className="workout-item v24-workout-item v25-warm-item" key={x}><span className="v25-mini-index">{i+1}</span><span>{x}</span></div>)}<div className="section-title v25-section-title"><span className="dot"/><strong>תוכנית האימון</strong><span className="v25-count">{workout.exercises.length} תרגילים</span></div>{workout.warnings?.map(warning=><p className="notice" key={warning}>{warning}</p>)}{workout.exercises.map((x,i)=>{const issues=exerciseIssues(x),alt=alternatives[x.id],section=workout.sections?.find(s=>s.start===i);return <Fragment key={x.id}>{section&&<div className="section-title"><div>{section.title.startsWith("בלוק 2")&&workout.transitionMinutes>0&&<p className="small">{workout.transitionMinutes} דק׳ התארגנות בין הבלוקים</p>}<h3>{section.title}</h3><p className="small">{section.detail}</p></div></div>}<div className="workout-item v24-workout-item v25-exercise-card"><div className="v25-exercise-index">{String(i+1).padStart(2,"0")}</div><div className="v25-exercise-body"><div className="v25-exercise-title"><strong>{x.he}</strong><span>{x.en}</span></div><div className="v25-prescription">{x.prescription}</div><div className="v25-meta"><span>{x.equipment}</span><span>{x.level}</span>{x.supersetGroup&&<span className="tag v28-superset-tag">סופר סט {x.supersetGroup}{x.supersetSlot}</span>}</div><div className="v25-cue"><strong>דגש:</strong> {x.cue}</div><Link className="btn v25-open-btn v25-workout-exercise-link" href={`/exercise/${encodeURIComponent(x.id)}?from=workout`} onNavigate={()=>openWorkoutExercise(x.id)}>{x.demoUrl?"פתח תרגיל והדגמה ←":"פתח תרגיל ←"}</Link>{x.allocation&&<div className="notice" style={{marginTop:7}}>{x.allocation}</div>}{x.regression&&<div className="small">רגרסיה: {x.regression}</div>}{issues.length>0&&<div className="notice" style={{marginTop:8}}><strong>⚠️ התאמה נדרשת: {issues.join(", ")}</strong><div className="small">התרגיל נשאר לקבוצה, ולמתאמנת עם המגבלה ניתן לבחור חלופה אישית.</div><button className="btn" style={{marginTop:8}} onClick={(e)=>{e.preventDefault();chooseAlternative(x)}}>הצג תרגיל חלופי</button></div>}{alt&&<div className="safe" style={{marginTop:8}}><strong>חלופה מוצעת: {alt.he} <span className="small">({alt.en})</span></strong><div className="small">{alt.equipment} · {alt.cue}</div><div style={{marginTop:7}}><Link className="btn v25-workout-alternative-link" href={`/exercise/${encodeURIComponent(alt.id)}?from=workout`} onNavigate={()=>openWorkoutExercise(alt.id)}>פתח חלופה</Link></div>{alt.regression&&<div className="small">קל יותר: {alt.regression}</div>}<button className="btn" style={{marginTop:8}} onClick={(e)=>{e.preventDefault();chooseAlternative(x)}}>חלופה אחרת</button></div>}</div></div></Fragment>})}<div className="section-title v25-section-title"><span className="dot red"/><strong>שחרור</strong><span className="v25-count">{workout.cool.length} שלבים</span></div>{workout.cool.map((x,i)=><div className="workout-item v24-workout-item v25-warm-item" key={x}><span className="v25-mini-index">{i+1}</span><span>{x}</span></div>)}<ShareButtons type="workout" payload={workout}/><div className="safe" style={{marginTop:12}}>האימון נועד לשמש כלי עבודה למדריכה. יש להתאים עומס, טווח, קצב ותרגיל לפי המתאמנות בפועל.</div></section>}
+  {tab==="workout"&&workout&&<section className="panel"><div className="row between v25-workout-head"><div><div className="v25-eyebrow">BISS WORKOUT</div><h2>{workout.title}</h2><strong>משך כולל: {workout.durationMinutes} דק׳</strong><WorkoutTiming workout={workout}/><div className="sub">{workout.meta}</div></div><div className="v25-alt-wrap"><button className="btn v25-alt-btn" onClick={buildWorkout}>צור אימון חלופי</button><span className="small">אותם פרמטרים, שילוב תרגילים חדש</span></div></div>{workout.type===BONE_TYPE&&<p className="notice">{BONE_NOTICE}</p>}{workout.type===BARRE_TYPE&&<p className="notice">{BARRE_NOTICE}</p>}{workout.limitationLabels?.length>0&&<div className="safe" style={{margin:"12px 0"}}><strong>התאמות פעילות:</strong> {workout.limitationLabels.join(" · ")}{workout.limitationNote&&<div className="small">הערת מדריכה: {workout.limitationNote}</div>}</div>}{workout.musicUrl&&<div className="music">🎧 <a href={workout.musicUrl} target="_blank" rel="noreferrer">פתחי ב-Spotify · {workout.musicTitle}</a></div>}<div className="section-title v25-section-title"><span className="dot blue"/><strong>חימום</strong><span className="v25-count">{workout.warm.length} שלבים</span></div>{workout.warm.map((x,i)=><div className="workout-item v24-workout-item v25-warm-item" key={x}><span className="v25-mini-index">{i+1}</span><span>{x}</span></div>)}<div className="section-title v25-section-title"><span className="dot"/><strong>תוכנית האימון</strong><span className="v25-count">{workout.exercises.length} תרגילים</span></div><StationRotation rotation={workout.stationRotation}/>{workout.warnings?.map(warning=><p className="notice" key={warning}>{warning}</p>)}{workout.exercises.map((x,i)=>{const issues=exerciseIssues(x),alt=alternatives[x.id],section=workout.sections?.find(s=>s.start===i);return <Fragment key={x.id}>{section&&<div className="section-title"><div>{section.title.startsWith("בלוק 2")&&workout.transitionMinutes>0&&<p className="small">{workout.transitionMinutes} דק׳ התארגנות בין הבלוקים</p>}<h3>{section.title}</h3><p className="small">{section.detail}</p></div></div>}<div className="workout-item v24-workout-item v25-exercise-card"><div className="v25-exercise-index">{String(i+1).padStart(2,"0")}</div><div className="v25-exercise-body"><div className="v25-exercise-title"><strong>{x.he}</strong><span>{x.en}</span></div><div className="v25-prescription">{x.prescription}</div><div className="v25-meta"><span>{x.equipment}</span><span>{x.level}</span>{x.supersetGroup&&<span className="tag v28-superset-tag">סופר סט {x.supersetGroup}{x.supersetSlot}</span>}</div><div className="v25-cue"><strong>דגש:</strong> {x.cue}</div><Link className="btn v25-open-btn v25-workout-exercise-link" href={`/exercise/${encodeURIComponent(x.id)}?from=workout`} onNavigate={()=>openWorkoutExercise(x.id)}>{x.demoUrl?"פתח תרגיל והדגמה ←":"פתח תרגיל ←"}</Link>{x.allocation&&<div className="notice" style={{marginTop:7}}>{x.allocation}</div>}{x.regression&&<div className="small">רגרסיה: {x.regression}</div>}{issues.length>0&&<div className="notice" style={{marginTop:8}}><strong>⚠️ התאמה נדרשת: {issues.join(", ")}</strong><div className="small">התרגיל נשאר לקבוצה, ולמתאמנת עם המגבלה ניתן לבחור חלופה אישית.</div><button className="btn" style={{marginTop:8}} onClick={(e)=>{e.preventDefault();chooseAlternative(x)}}>הצג תרגיל חלופי</button></div>}{alt&&<div className="safe" style={{marginTop:8}}><strong>חלופה מוצעת: {alt.he} <span className="small">({alt.en})</span></strong><div className="small">{alt.equipment} · {alt.cue}</div><div style={{marginTop:7}}><Link className="btn v25-workout-alternative-link" href={`/exercise/${encodeURIComponent(alt.id)}?from=workout`} onNavigate={()=>openWorkoutExercise(alt.id)}>פתח חלופה</Link></div>{alt.regression&&<div className="small">קל יותר: {alt.regression}</div>}<button className="btn" style={{marginTop:8}} onClick={(e)=>{e.preventDefault();chooseAlternative(x)}}>חלופה אחרת</button></div>}</div></div></Fragment>})}<div className="section-title v25-section-title"><span className="dot red"/><strong>שחרור</strong><span className="v25-count">{workout.cool.length} שלבים</span></div>{workout.cool.map((x,i)=><div className="workout-item v24-workout-item v25-warm-item" key={x}><span className="v25-mini-index">{i+1}</span><span>{x}</span></div>)}<ShareButtons type="workout" payload={workout}/><div className="safe" style={{marginTop:12}}>האימון נועד לשמש כלי עבודה למדריכה. יש להתאים עומס, טווח, קצב ותרגיל לפי המתאמנות בפועל.</div></section>}
 
   {tab==="homeworkResult"&&homework&&<section className="panel"><h2>{homework.title}</h2><div className="sub">{homework.meta}</div>{homework.musicUrl&&<div className="music">🎧 <a href={homework.musicUrl} target="_blank" rel="noreferrer">פתחי ב-Spotify · {homework.musicTitle}</a></div>}{homework.note&&<div className="safe" style={{margin:"12px 0"}}>הערת המדריכה: {homework.note}</div>}{homework.items.map((x,i)=><div className="workout-item v24-workout-item" key={x.id}><strong>{i+1}. {x.he}</strong><div>{x.prescription}</div><div className="small">{x.cue}</div><div style={{marginTop:7}}><Link className="btn" href={`/exercise/${x.id}`}>פתח תרגיל</Link></div></div>)}<ShareButtons type="homework" payload={homework}/></section>}
   {tab==="programResult"&&program&&<section className="panel">

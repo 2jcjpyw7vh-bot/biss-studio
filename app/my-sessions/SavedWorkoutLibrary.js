@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import BoneDemoLinks from "../exercise/BoneDemoLinks";
+import StationRotation from "../StationRotation";
 import { boneDemos } from "../../lib/bone-strength";
 
 export default function SavedWorkoutLibrary({client}) {
@@ -40,6 +41,7 @@ export default function SavedWorkoutLibrary({client}) {
       {/^https:\/\//i.test(plan.musicUrl) && <a href={plan.musicUrl} target="_blank" rel="noreferrer">{plan.musicTitle || "פלייליסט האימון"}</a>}
       {plan.warm.length > 0 && <><h3>חימום</h3><ul>{plan.warm.map((step,index) => <li key={index}>{step}</li>)}</ul></>}
       <h3>תוכנית האימון</h3>
+      <StationRotation rotation={plan.stationRotation}/>
       {plan.exercises.map((exercise,index) => {
         const section = plan.sections.find(item => item.start === index);
         return <Fragment key={index}>
