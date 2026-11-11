@@ -320,7 +320,7 @@ export default function Home(){
    const stations=(useRotation?[]:(boneSets?.exercises||chosen)).map(x=>{
      const {capacity}=workoutEquipment(x,inventory);
      return {...x,
-       allocation:capacity<participants?`יש ${capacity} יח׳ ממשפחת ${exerciseEquipmentLabel(x.equipment,inventory)} לכ־${participants} משתתפות — נדרשת רוטציה או חלופה.`:""};
+       allocation:capacity<participants?`זמינות ${capacity} יח׳ של ${exerciseEquipmentLabel(x.equipment,inventory)} ל־${participants} משתתפות — נדרשת רוטציה או חלופה.`:""};
    });
    const rotationPreview=useRotation?planStationRotation(rotationPool,inventory,participants,duration-warmMinutes-coolMinutes,workoutType,level):null;
    if(useRotation&&!rotationPreview){
