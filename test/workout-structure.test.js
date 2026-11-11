@@ -43,6 +43,9 @@ test("trio blocks rotate three groups and substitute for a station with only two
   assert.deepEqual(plan.exercises.map(item=>item.id), ["upper0", "upper1", "upper2", "lower0", "lower1", "lower2"]);
   assert.equal(plan.exercises[3].allocation, "תחנה 1 בבלוק · 3 מקומות");
   assert.deepEqual(sharedWorkoutPlan(plan).sections, plan.sections);
+  const summary = workoutSummary(plan);
+  assert.match(summary, /4\. lower0.*תחנה 1 בבלוק · 3 מקומות/);
+  assert.match(summary, /6\. lower2.*תחנה 3 בבלוק · 3 מקומות/);
   assert.match(planWorkoutBlocks({...input, pool: [...upper, deadlift, ...lower.slice(0, 2)]}).error, /אין 3 תחנות/);
   assert.match(planWorkoutBlocks({...input, people: 8}).error, /9 משתתפות/);
 });
