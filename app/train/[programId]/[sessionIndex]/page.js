@@ -5,12 +5,15 @@ import {useParams,useRouter} from "next/navigation";
 import {supabaseBrowser} from "../../../../lib/supabase-browser";
 
 const clock=value=>`${String(Math.floor(value/60)).padStart(2,"0")}:${String(value%60).padStart(2,"0")}`;
+const defaultTimerSeconds=45;
+const remainingSeconds=deadline=>Math.max(0,Math.ceil((deadline-Date.now())/1000));
 
 export default function TrainingRunner(){
  const {programId,sessionIndex}=useParams();
  const router=useRouter(),client=supabaseBrowser();
  const [data,setData]=useState(null),[message,setMessage]=useState("טוען אימון מאושר…");
- const [current,setCurrent]=useState(0),[seconds,setSeconds]=useState(45),[running,setRunning]=useState(false);
+ const [current,setCurrent]=useState(0),[seconds,setSeconds]=useState(defaultTimerSeconds);
+ const [deadline,setDeadline]=useState(null);
  const [runId,setRunId]=useState(""),[busy,setBusy]=useState(false);
 
  async function accessToken() {
@@ -64,18 +67,52 @@ export default function TrainingRunner(){
  },[client,programId,sessionIndex]);
 
  useEffect(()=>{
-  if(!running)return;
-  if(seconds<=0){setRunning(false);return}
-  const timer=setTimeout(()=>setSeconds(value=>Math.max(0,value-1)),1000);
-  return()=>clearTimeout(timer);
- },[running,seconds]);
+  if(deadline===null)return;
+  function syncTimer(){
+   const remaining=remainingSeconds(deadline);
+   setSeconds(remaining);
+   if(remaining===0)setDeadline(null);
+  }
+  syncTimer();
+  const timer=setInterval(syncTimer,250);
+  document.addEventListener("visibilitychange",syncTimer);
+  return()=>{
+   clearInterval(timer);
+   document.removeEventListener("visibilitychange",syncTimer);
+  };
+ },[deadline]);
 
- useEffect(()=>{setSeconds(45);setRunning(false)},[current]);
+ function toggleTimer(){
+  if(deadline===null){
+   setDeadline(Date.now()+seconds*1000);
+  } else {
+   setSeconds(remainingSeconds(deadline));
+   setDeadline(null);
+  }
+ }
+
+ function adjustTimer(delta){
+  if(deadline===null){
+   setSeconds(value=>Math.max(0,value+delta));
+   return;
+  }
+  const nextDeadline=Math.max(Date.now(),deadline)+delta*1000;
+  const remaining=remainingSeconds(nextDeadline);
+  setSeconds(remaining);
+  setDeadline(remaining>0?nextDeadline:null);
+ }
+
+ function moveExercise(offset){
+  setDeadline(null);
+  setSeconds(defaultTimerSeconds);
+  setCurrent(value=>value+offset);
+ }
  const fullscreen=()=>document.documentElement.requestFullscreen?.();
 
  async function finish() {
   setBusy(true);
-  setRunning(false);
+  if(deadline!==null)setSeconds(remainingSeconds(deadline));
+  setDeadline(null);
   setMessage("שומר סיום אימון…");
   try {
    await recordRun({action:"complete",run_id:runId},await accessToken());
@@ -98,9 +135,9 @@ export default function TrainingRunner(){
    <div className="runner-prescription">{item.prescription}</div>
    <div className="runner-meta"><span>{item.equipment||"ללא ציוד"}</span>{data.session.progression&&<span>{data.session.progression}</span>}</div>
    {item.cue&&<div className="runner-cue">{item.cue}</div>}
-   <div className="runner-timer"><strong>{clock(seconds)}</strong><div className="row"><button className="btn" onClick={()=>setSeconds(Math.max(0,seconds-15))}>−15</button><button className="btn primary" disabled={seconds===0} onClick={()=>setRunning(value=>!value)}>{running?"עצירה":"הפעלה"}</button><button className="btn" onClick={()=>setSeconds(seconds+15)}>+15</button></div></div>
+   <div className="runner-timer"><strong>{clock(seconds)}</strong><div className="row"><button className="btn" onClick={()=>adjustTimer(-15)}>−15</button><button className="btn primary" disabled={seconds===0} onClick={toggleTimer}>{deadline!==null?"עצירה":"הפעלה"}</button><button className="btn" onClick={()=>adjustTimer(15)}>+15</button></div></div>
    {seconds===0&&<div className="safe"><strong>הזמן הסתיים</strong> — עברו לתרגיל הבא כשאתם מוכנים.</div>}
-   <div className="runner-controls"><button className="btn" disabled={current===0} onClick={()=>setCurrent(value=>value-1)}>הקודם</button>{item.id&&<Link className="btn" href={`/exercise/${item.id}`} target="_blank">הסבר לתרגיל</Link>}<button className="btn primary" disabled={current===items.length-1} onClick={()=>setCurrent(value=>value+1)}>הבא</button></div>
+   <div className="runner-controls"><button className="btn" disabled={current===0} onClick={()=>moveExercise(-1)}>הקודם</button>{item.id&&<Link className="btn" href={`/exercise/${item.id}`} target="_blank">הסבר לתרגיל</Link>}<button className="btn primary" disabled={current===items.length-1} onClick={()=>moveExercise(1)}>הבא</button></div>
   </section>}
   <footer className="runner-footer"><strong>הקרנה למסך:</strong> הפעילו שיקוף מסך או Cast במכשיר לאחר התחברות לרשת הסטודיו. המערכת אינה מתחברת אוטומטית למסך. <span>בכאב או תחושה חריגה מפסיקים מיד.</span></footer>
  </main>
