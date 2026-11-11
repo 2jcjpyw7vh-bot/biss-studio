@@ -8,7 +8,7 @@ export const dynamic="force-dynamic";
 const clean=(v,n=300)=>String(v||"").trim().slice(0,n);
 const isUuid=value=>typeof value==="string"&&/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value);
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
-const safeProgram=value=>({title:clean(value?.title,180),meta:clean(value?.meta,400),musicUrl:programPlaylistUrl(value?.musicUrl),musicTitle:clean(value?.musicTitle,120),sessions:Array.isArray(value?.sessions)?value.sessions.slice(0,60).map(session=>({name:clean(session?.name,120),progression:clean(session?.progression,80),musicUrl:programPlaylistUrl(session?.musicUrl),musicTitle:clean(session?.musicTitle,120),items:Array.isArray(session?.items)?session.items.slice(0,20).map(item=>({id:clean(item?.id,100),he:clean(item?.he,120),en:clean(item?.en,120),equipment:clean(item?.equipment,120),prescription:clean(item?.prescription,180),cue:clean(item?.cue,300)})):[]})):[]});
+const safeProgram=value=>({title:clean(value?.title,180),meta:clean(value?.meta,400),musicUrl:programPlaylistUrl(value?.musicUrl),musicTitle:clean(value?.musicTitle,120),sessions:Array.isArray(value?.sessions)?value.sessions.slice(0,60).map(session=>({name:clean(session?.name,120),progression:clean(session?.progression,80),musicUrl:programPlaylistUrl(session?.musicUrl),musicTitle:clean(session?.musicTitle,120),items:Array.isArray(session?.items)?session.items.slice(0,20).map(item=>({id:clean(item?.id,100),he:clean(item?.he,120),en:clean(item?.en,120),equipment:clean(item?.equipment,120),region:clean(item?.region,80),prescription:clean(item?.prescription,180),cue:clean(item?.cue,300)})):[]})):[]});
 
 async function snapshot(db){const[trainees,coaches,programs]=await Promise.all([db.from("biss_users").select("id,full_name").eq("role","trainee").eq("status","active").order("full_name"),db.from("biss_users").select("id,full_name,role").in("role",["manager","instructor"]).eq("status","active").order("full_name"),db.from("biss_programs").select("id,trainee_id,coach_id,title,status,equipment_access,starts_on,ends_on,created_at").order("created_at",{ascending:false}).limit(50)]);const error=trainees.error||coaches.error||programs.error;if(error)throw error;return{trainees:trainees.data||[],coaches:coaches.data||[],programs:programs.data||[]}}
 export async function GET(req) {
@@ -92,5 +92,3 @@ export async function POST(req) {
   await writeAudit(db,{action:"program.assigned",entityType:"program",entityId:program.id,label:row.title,metadata:{status:"active"}});
   return reply({program_id:program.id});
 }
-
-
