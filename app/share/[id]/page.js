@@ -15,7 +15,7 @@ export default async function SharePage({params}){const {id}=await params,db=sup
   <div className="section-title"><span className="dot blue"/><strong>חימום</strong></div>
   {p.warm?.map((line,i)=><div className="workout-item" key={i}>{line}</div>)}
   <div className="section-title"><span className="dot"/><strong>האימון</strong></div>
-  <StationRotation rotation={p.stationRotation}/>
+  <StationRotation workout={p}/>
   {plan.exercises.map((exercise,i)=>{
     const section=plan.sections.find(item=>item.start===i);
     return <Fragment key={i}>
