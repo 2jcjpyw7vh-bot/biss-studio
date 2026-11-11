@@ -6,6 +6,7 @@ import {programDateError,programPlaylistUrl} from "../../../lib/program-session"
 
 export const dynamic="force-dynamic";
 const clean=(v,n=300)=>String(v||"").trim().slice(0,n);
+const isUuid=value=>typeof value==="string"&&/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value);
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 const safeProgram=value=>({title:clean(value?.title,180),meta:clean(value?.meta,400),musicUrl:programPlaylistUrl(value?.musicUrl),musicTitle:clean(value?.musicTitle,120),sessions:Array.isArray(value?.sessions)?value.sessions.slice(0,60).map(session=>({name:clean(session?.name,120),progression:clean(session?.progression,80),musicUrl:programPlaylistUrl(session?.musicUrl),musicTitle:clean(session?.musicTitle,120),items:Array.isArray(session?.items)?session.items.slice(0,20).map(item=>({id:clean(item?.id,100),he:clean(item?.he,120),en:clean(item?.en,120),equipment:clean(item?.equipment,120),prescription:clean(item?.prescription,180),cue:clean(item?.cue,300)})):[]})):[]});
 
@@ -14,9 +15,19 @@ export async function GET(req) {
   if (!await verifyAdminPin(req)) return reply({error:"נדרש PIN מנהל"},401);
   const db = supabaseAdmin();
   if (!db) return reply({error:"מסד Studio אינו מחובר"},503);
-  const traineeId = new URL(req.url).searchParams.get("trainee_id");
+  const params = new URL(req.url).searchParams;
+  const traineeId = params.get("trainee_id");
+  const programId = params.get("program_id");
+  if (programId !== null) {
+    if (!isUuid(traineeId) || !isUuid(programId)) return reply({error:"פרטי השיוך אינם תקינים"},400);
+    const {data:assignment,error} = await db.from("biss_programs")
+      .select("program_payload").eq("id",programId).eq("trainee_id",traineeId).maybeSingle();
+    if (error) return reply({error:"לא ניתן לטעון את התוכנית שנשמרה"},503);
+    if (!assignment) return reply({error:"התוכנית לא נמצאה עבור המתאמנת שנבחרה"},404);
+    return reply({program:safeProgram(assignment.program_payload)});
+  }
   if (traineeId !== null) {
-    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(traineeId)) {
+    if (!isUuid(traineeId)) {
       return reply({error:"מזהה המתאמנת אינו תקין"},400);
     }
     const {data:programs,error} = await db.from("biss_programs")
