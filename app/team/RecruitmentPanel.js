@@ -7,14 +7,16 @@ import RecruitmentPayment from "./RecruitmentPayment";
 
 const money={type:"number",min:0,max:999999.99,step:"0.01"};
 
-function Applicant({person,terms,taken,open,busy,onApprove}) {
+function Applicant({person,terms,taken,open,busy,onApprove,onCertificate}) {
   const [selected,setSelected]=useState([]);
   const approved=person.approved_ids;
   const candidates=terms.slots.filter(slot=>person.requested_ids.includes(slot.id));
   return <article className="card">
     <h4>{person.name}</h4>
     <p dir="ltr" style={{textAlign:"right"}}>{person.email}{person.phone&&` · ${person.phone}`}</p>
-    {person.qualifications&&<p>הסמכות · {person.qualifications}</p>}
+    <p>סוג הסמכה · {person.qualifications||"טרם נמסר"}</p>
+    <p>ביטוח אחריות מקצועית · {person.professional_insurance?"המועמדת הצהירה על ביטוח בתוקף":"טרם התקבלה הצהרה"}</p>
+    {person.certificate_mime&&<button className="btn" type="button" disabled={busy} onClick={()=>onCertificate(person.id)}>הורדת תעודת הסמכה</button>}
     {person.experience&&<p>ניסיון · {person.experience}</p>}
     {person.note&&<p>הערות · {person.note}</p>}
     {candidates.map(slot=>{
@@ -65,6 +67,17 @@ export default function RecruitmentPanel({pin,sessions,onAssigned}) {
   }
   async function list(){setPosts((await request()).posts);}
   async function load(id){setDetail(await request(`?id=${encodeURIComponent(id)}`));}
+  async function downloadCertificate(id){
+    const response=await fetch(`/api/recruitment?certificate=${encodeURIComponent(id)}`,{headers:{"x-admin-pin":pin},cache:"no-store"});
+    if(!response.ok)throw Error("לא ניתן להוריד את תעודת ההסמכה.");
+    const file=await response.blob();
+    const url=URL.createObjectURL(file);
+    const link=document.createElement("a");
+    link.href=url;
+    link.download=response.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1]||"studio-certificate";
+    link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
 
   async function publish(event) {
     event.preventDefault();
@@ -156,6 +169,7 @@ export default function RecruitmentPanel({pin,sessions,onAssigned}) {
         <h3>מועמדויות</h3>
         {!detail.applications.length&&<p>עדיין אין מועמדויות.</p>}
         {detail.applications.map(person=><Applicant key={person.id} person={person} terms={post.terms} taken={taken} open={post.status==="open"} busy={busy}
+          onCertificate={id=>run(()=>downloadCertificate(id))}
           onApprove={(id,sessionIds)=>run(async()=>{await request("",{action:"approve",id,sessionIds});await load(post.id);setMessage("השיבוץ אושר ונשמר.");onAssigned?.();})}/>)}
       </section>}
       {message&&<p role="status" className="notice">{message}</p>}

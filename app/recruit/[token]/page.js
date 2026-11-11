@@ -1,5 +1,6 @@
 "use client";
 import StudioSocialLinks from "../../StudioSocialLinks";
+import {certificateMaxBytes} from "../../../lib/recruitment-certificate";
 import {useEffect,useState} from "react";
 import {useParams} from "next/navigation";
 import {recruitmentDate,shekels} from "../../../lib/recruitment";
@@ -30,10 +31,12 @@ export default function RecruitmentPage() {
     setBusy(true);
     setMessage("");
     try {
-      const fields=Object.fromEntries(new FormData(event.currentTarget));
+      const fields=new FormData(event.currentTarget);
+      const certificate=fields.get("certificate");
+      if(certificate?.size>certificateMaxBytes)throw Error("אפשר לצרף תעודה בגודל של עד 3 MB.");
+      fields.set("sessionIds",JSON.stringify(selected));
       const response=await fetch(`/api/recruitment/${token}`,{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({...fields,sessionIds:selected})
+        method:"POST",body:fields
       });
       const result=await response.json();
       if(!response.ok)throw Error(result.error);
@@ -77,11 +80,16 @@ export default function RecruitmentPage() {
           <label className="field">שם מלא<input name="name" autoComplete="name" maxLength={100} required/></label>
           <label className="field">מייל<input name="email" type="email" autoComplete="email" maxLength={180} required/></label>
           <label className="field">טלפון<input name="phone" type="tel" autoComplete="tel" maxLength={35}/></label>
-          <label className="field">הסמכות<textarea name="qualifications" maxLength={800} required={Boolean(terms.certifications)}/></label>
+          <label className="field">סוג ההסמכה שלך<textarea name="qualifications" maxLength={800} required/></label>
+          <label className="field">צירוף תעודת הסמכה (אופציונלי)<input name="certificate" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"/><span className="small">PDF, JPG או PNG עד 3 MB</span></label>
           <label className="field">ניסיון מקצועי<textarea name="experience" maxLength={600} required={Boolean(terms.experience)}/></label>
           <label className="field">הערות<textarea name="note" maxLength={900}/></label>
           <input name="website" hidden autoComplete="off" tabIndex={-1}/>
         </div>
+        <label className="permission-check">
+          <input type="checkbox" name="professionalInsurance" value="yes" required/>
+          אני מאשרת שיש לי ביטוח אחריות מקצועית בתוקף המכסה את פעילותי כמדריכה.
+        </label>
         <p className="small">פרטי המועמדות יועברו לצוות Studio לצורך בחינת השיבוץ.</p>
         <button className="btn primary" disabled={busy||!selected.length}>{busy?"שולח…":"שליחת מועמדות"}</button>
       </form>}
