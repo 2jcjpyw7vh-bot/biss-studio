@@ -19,6 +19,7 @@ import {rememberWorkout,workoutDraft} from "./workout-navigation";
 import WorkoutTiming from "./WorkoutTiming";
 import StationRotation from "./StationRotation";
 import {planStationRotation} from "../lib/station-rotation";
+import {publicWorkoutShare} from "../lib/public-workout-share";
 
 const levels=["מתחילים","בינוניים","מתקדמים","מעורב"];
 const workoutTypes=[
@@ -403,7 +404,7 @@ export default function Home(){
  }
  async function createShare(type,payload){const r=await fetch("/api/share",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type,payload})});const d=await r.json();if(!r.ok)throw new Error(d.error||"לא ניתן ליצור קישור");return d.url}
  async function share(type,payload,channel="copy"){
-   try{const url=await createShare(type,payload),title=payload.title||payload.he||"BISS",text=`${title} · BISS\n${url}`;
+   try{const url=await createShare(type,type==="workout"?publicWorkoutShare(payload):payload),title=payload.title||payload.he||"BISS",text=`${title} · BISS\n${url}`;
      if(channel==="whatsapp")window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,"_blank","noopener,noreferrer");
      else if(channel==="email")window.location.href=`mailto:?subject=${encodeURIComponent(title+" | BISS")}&body=${encodeURIComponent(text)}`;
      else{await navigator.clipboard.writeText(url);alert("הקישור הועתק")}
