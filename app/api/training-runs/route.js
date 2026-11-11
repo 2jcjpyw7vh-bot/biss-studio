@@ -18,17 +18,12 @@ export async function POST(req){
  if(body.action==="start"){
   if(!Number.isInteger(sessionIndex)||sessionIndex<0)return reply({error:"אימון לא תקין"},400);
   if(!await authorizedProgram(db,profile,programId,sessionIndex))return reply({error:"האימון אינו מאושר"},403);
-  const recent=new Date(Date.now()-6*60*60*1000).toISOString();
-  const {data:existing,error:existingError}=await db.from("biss_training_runs").select("id,started_at")
-   .eq("trainee_id",profile.id).eq("program_id",programId).eq("session_index",sessionIndex)
-   .eq("status","in_progress").gte("started_at",recent).order("started_at",{ascending:false}).limit(1).maybeSingle();
-  if(existingError)return reply({error:"לא ניתן לבדוק את מעקב האימון. אפשר לנסות שוב."},503);
-  if(existing)return reply({run:existing,reused:true});
-  const {error:cleanupError}=await db.from("biss_training_runs").update({status:"abandoned"})
-   .eq("trainee_id",profile.id).eq("program_id",programId).eq("session_index",sessionIndex)
-   .eq("status","in_progress").lt("started_at",recent);
-  if(cleanupError)return reply({error:"לא ניתן להתחיל מעקב אימון. אפשר לנסות שוב."},503);
-  const{data:run,error:insertError}=await db.from("biss_training_runs").insert({trainee_id:profile.id,program_id:programId,session_index:sessionIndex,status:"in_progress"}).select("id,started_at").single();if(insertError)return reply({error:"לא ניתן להתחיל מעקב אימון"},503);return reply({run,reused:false});
+  const {data:started,error:startError}=await db.rpc("studio_start_training_run",{
+   p_trainee_id:profile.id,p_program_id:programId,p_session_index:sessionIndex
+  }).maybeSingle();
+  if(startError)return reply({error:"לא ניתן להתחיל מעקב אימון. אפשר לנסות שוב."},503);
+  if(!started)return reply({error:"האימון אינו מאושר"},403);
+  return reply({run:{id:started.run_id,started_at:started.run_started_at},reused:started.reused});
  }
  if(body.action==="complete"){
   const runId=String(body.run_id||"");if(!runId)return reply({error:"חסר רישום אימון"},400);
