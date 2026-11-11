@@ -3,6 +3,7 @@ import Link from "next/link";
 import {useEffect,useRef,useState} from "react";
 import {useParams,useRouter} from "next/navigation";
 import {supabaseBrowser} from "../../../../lib/supabase-browser";
+import IntervalTimer from "../../../IntervalTimer";
 
 const clock=value=>`${String(Math.floor(value/60)).padStart(2,"0")}:${String(value%60).padStart(2,"0")}`;
 const defaultTimerSeconds=45;
@@ -173,6 +174,7 @@ export default function TrainingRunner(){
    </ol>
   </details>}
   {data.session.musicUrl&&<a className="btn" href={data.session.musicUrl} target="_blank" rel="noreferrer">פתיחת פלייליסט · {data.session.musicTitle}</a>}
+  <IntervalTimer/>
   {!item?<section className="runner-stage"><h1>לא הוגדרו תרגילים באימון זה</h1></section>:<section className="runner-stage">
    <div className="runner-progress">תרגיל {current+1} מתוך {items.length}</div>
    <h1>{item.he}</h1>{item.en&&<div className="runner-english">{item.en}</div>}
