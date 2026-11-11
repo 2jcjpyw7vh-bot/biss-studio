@@ -1,10 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {programSessionWorkout, sessionPlaylist} from "../lib/program-session.js";
+import {programDateError, programSessionWorkout, sessionPlaylist} from "../lib/program-session.js";
 import {studioWorkoutFields} from "../lib/studio-workout-payload.js";
 import {publicSubstituteOffer} from "../lib/substitute-privacy.js";
 
 const program = {musicUrl:"https://example.com/default", musicTitle:"ברירת מחדל", trainee:"מידע פרטי"};
+test("program dates can be omitted or use the same day, and must be valid and ordered", () => {
+  assert.equal(programDateError("",undefined),"");
+  assert.equal(programDateError("2028-02-29","2028-02-29"),"");
+  assert.notEqual(programDateError("2026-02-29",""),"");
+  assert.notEqual(programDateError("2026-11-12","2026-11-11"),"");
+  assert.notEqual(programDateError(false,""),"");
+});
 const session = {
   name:"שבוע 2 · אימון 1",
   progression:"תוספת חזרות",
