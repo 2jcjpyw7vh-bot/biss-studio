@@ -61,6 +61,7 @@ export default function Home(){
  const [workoutType,setWorkoutType]=useState("classic");
  const [includeFinisher,setIncludeFinisher]=useState(false);
  const [blockTrios,setBlockTrios]=useState(false);
+ const [trioError,setTrioError]=useState("");
  const [musicUrl,setMusicUrl]=useState(""),[musicTitle,setMusicTitle]=useState("");
  const [workout,setWorkout]=useState(null),[program,setProgram]=useState(null),[homework,setHomework]=useState(null);
  const [inventory,setInventory]=useState(equipmentSeed),[pin,setPin]=useState(""),[adminMsg,setAdminMsg]=useState("");
@@ -75,6 +76,9 @@ export default function Home(){
  const [alternatives,setAlternatives]=useState({});
  const [exerciseLibrary,setExerciseLibrary]=useState(exercisesSeed);
  const [libraryLoading,setLibraryLoading]=useState(true);
+ useEffect(()=>{
+   setTrioError("");
+ },[blockTrios,equipments,regions,people,minutes,level,structure,workoutType,includeFinisher,limitations]);
  useEffect(()=>{
    const requested=new URLSearchParams(window.location.search).get("tab");
    if(requested==="exercises")setTab("exercises");
@@ -294,7 +298,16 @@ export default function Home(){
      if(!extraPlan.error)extraPlan.warnings.push(bone?"נוספו תרגילי חיזוק עצם ללא ציוד כדי להשלים את הבלוקים.":"נוספו תרגילים ללא ציוד כדי להשלים את הבלוקים.");
      blockPlan=extraPlan;
    }
-   if(blockPlan?.error){alert(blockPlan.error);return;}
+   if(blockPlan?.error){
+     if(trios){
+       setTrioError(blockPlan.error);
+       setTab("builder");
+     } else {
+       alert(blockPlan.error);
+     }
+     return;
+   }
+   setTrioError("");
    if(!blockPlan&&level!=="מעורב"){
      const leveled=pool.filter(x=>x.level===level);
      if(leveled.length>=4)pool=leveled;
@@ -458,7 +471,13 @@ async function addEquipment(e){
 <label className="field" style={{marginTop:10}}>הערת מדריכה
 <input value={limitationNote} onChange={e=>setLimitationNote(e.target.value)} placeholder="למשל: להימנע מכפיפה עמוקה בברך שמאל"/>
 </label>
-</div><div className="music"><strong>🎧 מוזיקה — אופציונלי</strong><div className="filters"><label className="field">שם הפלייליסט / השיר<input value={musicTitle} onChange={e=>setMusicTitle(e.target.value)} placeholder="למשל BISS Strength"/></label><label className="field">קישור Spotify<input value={musicUrl} onChange={e=>setMusicUrl(e.target.value)} placeholder="https://open.spotify.com/..."/></label></div></div><div className="row" style={{marginTop:14}}><button className="btn primary" disabled={isBarre&&(!barreAvailable||!validBarreSize)} onClick={buildWorkout}>צרי אימון</button>{!isBarre&&<button className="btn" onClick={()=>setEquipments(["ללא ציוד"])}>משקל גוף בלבד</button>}</div></section>}
+</div><div className="music"><strong>🎧 מוזיקה — אופציונלי</strong><div className="filters"><label className="field">שם הפלייליסט / השיר<input value={musicTitle} onChange={e=>setMusicTitle(e.target.value)} placeholder="למשל BISS Strength"/></label><label className="field">קישור Spotify<input value={musicUrl} onChange={e=>setMusicUrl(e.target.value)} placeholder="https://open.spotify.com/..."/></label></div></div>{trioError&&<div className="notice" style={{marginTop:14}}>
+  <p role="alert">{trioError}</p>
+  <div className="row">
+    {equipments.length>0&&<button className="btn" onClick={()=>setEquipments([])}>לאפשר את כל הציוד</button>}
+    {workoutType!==BONE_TYPE&&<button className="btn" onClick={()=>setStructure("תחנות")}>לעבור למבנה תחנות</button>}
+  </div>
+</div>}<div className="row" style={{marginTop:14}}><button className="btn primary" disabled={isBarre&&(!barreAvailable||!validBarreSize)} onClick={buildWorkout}>צרי אימון</button>{!isBarre&&<button className="btn" onClick={()=>setEquipments(["ללא ציוד"])}>משקל גוף בלבד</button>}</div></section>}
 
   {tab==="exercises"&&<section className="panel"><div className="row between"><div><h2>ספריית תרגילים</h2><div className="sub">חיפוש לפי שריר, אזור גוף, דפוס תנועה או ציוד.</div></div><div className="kpi">{libraryLoading?"…":filtered.length}</div></div><div className="filters"><label className="field">חיפוש<input value={q} onChange={e=>setQ(e.target.value)} placeholder="למשל glute medius, כתפיים, hinge..."/></label><MultiChoice label="אזור — בחירה מרובה" options={allRegions} selected={regions} onChange={setRegions}/><MultiChoice label="ציוד — בחירה מרובה" options={allEquipment} selected={equipments} onChange={setEquipments}/></div><div className="grid">{filtered.map(x=><article className="card exercise" key={x.id}><h3>{x.he}</h3><div className="small">{x.en}</div><p>{x.muscles}</p><div className="tags"><span className="tag green">{x.region}</span><span className="tag blue">{x.equipment}</span><span className="tag">{x.level}</span></div><p className="small"><strong>דגש:</strong> {x.cue}</p>{x.regression&&<div className="small">קל יותר: {x.regression}</div>}{x.safety&&<div className="small">⚠️ {x.safety}</div>}<div className="push-bottom"><input value={exerciseMusic[x.id]||""} onChange={e=>setExerciseMusic({...exerciseMusic,[x.id]:e.target.value})} placeholder="קישור Spotify אופציונלי"/><div className="row" style={{marginTop:8}}><Link className="btn primary" href={`/exercise/${x.id}`}>פתח תרגיל</Link><button className="btn green" onClick={()=>shareExercise(x,"whatsapp")}>WhatsApp</button><button className="btn blue" onClick={()=>shareExercise(x,"email")}>מייל</button><button className="btn" onClick={()=>shareExercise(x,"copy")}>העתקת קישור</button></div></div></article>)}</div></section>}
 
