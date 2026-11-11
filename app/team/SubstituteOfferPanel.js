@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {canAccessInstructorArea} from "../../lib/studio-permissions";
-import {substituteContactLinks} from "../../lib/substitute-contact";
+import OfferContactLinks from "./OfferContactLinks";
 
 const israelDate = new Intl.DateTimeFormat("he-IL",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Jerusalem"});
 
@@ -25,7 +25,6 @@ export default function SubstituteOfferPanel({data,call,busy,draftWorkout}){
   const offer=shareUrl&&(data.offers||[]).find(item=>shareUrl.endsWith(`/substitute/${item.token}`));
   const shareActive=offer?.status==="pending"&&Date.parse(offer.expires_at)>Date.now();
   const recipient=shareActive?eligible.find(user=>user.id===offer.instructor_id):null;
-  const contact=substituteContactLinks(recipient,shareUrl);
 
   const addGroup=async event=>{
     event.preventDefault();
@@ -102,8 +101,7 @@ export default function SubstituteOfferPanel({data,call,busy,draftWorkout}){
       <div className="row">
         <a className="btn" href={shareUrl} target="_blank" rel="noreferrer">פתיחת קישור</a>
         <button className="btn" type="button" onClick={copy}>העתקת קישור</button>
-        <a className="btn green" target="_blank" rel="noreferrer" href={contact.whatsapp}>{contact.number?"פתיחה ב־WhatsApp של המדריכה":"בחירת נמענת ב־WhatsApp"}</a>
-        <a className="btn blue" href={contact.mail}>{contact.email?"פתיחת מייל למדריכה":"בחירת נמענת במייל"}</a>
+        <OfferContactLinks recipient={recipient} shareUrl={shareUrl}/>
       </div>
     </div>}
   </section>;
