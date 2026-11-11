@@ -1,3 +1,4 @@
+import StudioSocialLinks from "../../StudioSocialLinks";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {Fragment} from "react";
 import {sharedWorkoutPlan,trioStationLabel} from "../../../lib/workout-structure";
@@ -37,4 +38,4 @@ export default async function SharePage({params}){const {id}=await params,db=sup
     <ProgramSessionDetails program={p} session={session}/>
   </article>)}
 </>}
-</section><footer className="footer">BISS</footer></main>}
+</section><footer className="footer">BISS</footer><StudioSocialLinks/></main>}

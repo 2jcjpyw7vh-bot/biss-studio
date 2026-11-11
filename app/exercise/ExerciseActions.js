@@ -1,8 +1,10 @@
 "use client";
 
+import {studioShareMessage} from "../../lib/studio-share-message";
+
 export default function ExerciseActions({exercise}){
   const getUrl=()=>window.location.href;
-  const text=()=>`${exercise.he} (${exercise.en}) · BISS\n${getUrl()}`;
+  const text=()=>studioShareMessage("exercise",exercise.he,getUrl());
   async function copy(){await navigator.clipboard.writeText(getUrl());alert("קישור התרגיל הועתק")}
   function whatsapp(){window.open(`https://wa.me/?text=${encodeURIComponent(text())}`,"_blank","noopener,noreferrer")}
   function email(){window.location.href=`mailto:?subject=${encodeURIComponent(exercise.he+" | BISS")}&body=${encodeURIComponent(text())}`}

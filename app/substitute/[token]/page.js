@@ -1,4 +1,5 @@
 "use client";
+import StudioSocialLinks from "../../StudioSocialLinks";
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {useParams} from "next/navigation";
@@ -39,5 +40,5 @@ export default function SubstituteOffer(){
   {active?<div className="row"><button className="btn primary" disabled={busy} onClick={()=>decide("accepted")}>מתאימה לי — אישור</button><button className="btn" disabled={busy} onClick={()=>decide("declined")}>לא מתאימה הפעם</button></div>:<div className="notice">{finalMessages[state]||"ההצעה אינה פעילה."}</div>}
   {message&&<div className="notice" role="status">{message}</div>}
   <div className="small">שמות מתאמנות ומידע רפואי אינם מוצגים בקישור זה.</div>
- </section></main>
+ </section><StudioSocialLinks/></main>
 }

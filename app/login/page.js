@@ -1,4 +1,5 @@
 "use client";
+import StudioSocialLinks from "../StudioSocialLinks";
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {supabaseBrowser} from "../../lib/supabase-browser";
@@ -183,5 +184,5 @@ export default function LoginPage() {
     </form>}
     {message && <div role="status" className={message.startsWith("נשלחה") || message.startsWith("✓") ? "safe" : "notice"}>{message}</div>}
     <Link className="btn" href="/">חזרה למערכת</Link>
-  </section></main>;
+  </section><StudioSocialLinks/></main>;
 }

@@ -1,3 +1,4 @@
+import StudioSocialLinks from "../../StudioSocialLinks";
 import Link from "next/link";
 import {notFound} from "next/navigation";
 import exercisesSeed from "../../../data/exercises.json";
@@ -59,5 +60,5 @@ export default async function ExercisePage({params,searchParams}){
     {x.safety&&<section className="v26-safety"><div className="v26-safety-icon">!</div><div><strong>בטיחות והתאמה</strong><p>{x.safety}</p><span>בכאב, מגבלה, הריון או הנחיה רפואית — המדריכה מתאימה את התרגיל לפי המצב בפועל. הדף אינו אבחון רפואי.</span></div></section>}
     <section className="v26-action-panel"><div><div className="eyebrow">SHARE & PRACTICE</div><h3>הדגמה ושיתוף</h3><p className="small">פתחו הדגמה או שתפו את דף התרגיל ישירות.</p></div><div className="v26-action-buttons"><a className="btn primary" href={x.demoUrl||youtube} target="_blank" rel="noreferrer">▶ סרטון הדגמה</a><ExerciseActions exercise={x}/></div></section>
     <footer className="footer">BISS · ספריית תרגילים V2.8</footer>
-  </main>;
+  <StudioSocialLinks/></main>;
 }

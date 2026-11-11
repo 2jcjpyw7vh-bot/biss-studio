@@ -17,6 +17,8 @@ test("offer links prefill exactly one recipient when a contact is valid",()=>{
  assert.equal(new URL(contact.whatsapp).pathname,"/972501234567");
  assert.match(new URL(contact.whatsapp).searchParams.get("text"),/https:\/\/studio\.example/);
  assert.match(contact.mail,/^mailto:coach%2Bstudio@example\.com\?/);
+ assert.equal(new URL(contact.mail).searchParams.get("body"),new URL(contact.whatsapp).searchParams.get("text"));
+ assert.match(new URL(contact.mail).searchParams.get("body"),/^היי,\n\n.*BISS Studio/);
  const missing=substituteContactLinks({email:"one@example.com,two@example.com"},url);
  assert.match(missing.mail,/^mailto:\?/);
  assert.equal(new URL(missing.whatsapp).pathname,"/");
