@@ -1,10 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {programDateError, programSessionWorkout, sessionPlaylist} from "../lib/program-session.js";
+import {programDateError, programSessionWorkout, sessionPlaylist, spotifyPlaylistUrl} from "../lib/program-session.js";
 import {studioWorkoutFields} from "../lib/studio-workout-payload.js";
 import {publicSubstituteOffer} from "../lib/substitute-privacy.js";
 
 const program = {musicUrl:"https://example.com/default", musicTitle:"ברירת מחדל", trainee:"מידע פרטי"};
+
+test("personal Spotify links accept playlists and remove share parameters",()=>{
+  const url="https://open.spotify.com/playlist/37i9dQZF1DX4JAvHpjipBk";
+  assert.equal(spotifyPlaylistUrl(url+"?si=share-token"),url);
+  assert.equal(spotifyPlaylistUrl(url.replace("/playlist/","/intl-he/playlist/")),url);
+  assert.equal(spotifyPlaylistUrl(url.replace("/playlist/","/track/")),"");
+  assert.equal(spotifyPlaylistUrl(url.replace("open.spotify.com","open.spotify.com.example.org")),"");
+  assert.equal(spotifyPlaylistUrl(url.replace("https:","http:")),"");
+});
 test("program dates can be omitted or use the same day, and must be valid and ordered", () => {
   assert.equal(programDateError("",undefined),"");
   assert.equal(programDateError("2028-02-29","2028-02-29"),"");
