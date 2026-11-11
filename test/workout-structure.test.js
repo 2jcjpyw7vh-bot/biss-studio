@@ -29,6 +29,24 @@ test("concurrent stations cannot overbook two variants of the same equipment fam
   assert.equal(plan.warnings.length, 0);
 });
 
+test("trio blocks rotate three groups and substitute for a station with only two anchors", () => {
+  const floorAnchor = "נקודת עיגון לגומיות - רצפה";
+  const inventory = [
+    {name_he: floorAnchor, category: "anchor", quantity: 2},
+    {name_he: "נקודת עיגון לגומיות - גובה מותן", category: "anchor", quantity: 4}
+  ];
+  const deadlift = exercise("deadlift", "רגליים", floorAnchor);
+  const input = {...options, people: 9, inventory, trios: true, pool: [...upper, deadlift, ...lower]};
+  const plan = planWorkoutBlocks(input);
+  assert.deepEqual(plan.sections.map(section=>section.start), [0, 3]);
+  assert.ok(plan.sections.every(section=>section.detail.includes("1 ל־2, 2 ל־3, 3 ל־1")));
+  assert.deepEqual(plan.exercises.map(item=>item.id), ["upper0", "upper1", "upper2", "lower0", "lower1", "lower2"]);
+  assert.equal(plan.exercises[3].allocation, "תחנה 1 בבלוק · 3 מקומות");
+  assert.deepEqual(sharedWorkoutPlan(plan).sections, plan.sections);
+  assert.match(planWorkoutBlocks({...input, pool: [...upper, deadlift, ...lower.slice(0, 2)]}).error, /אין 3 תחנות/);
+  assert.match(planWorkoutBlocks({...input, people: 8}).error, /9 משתתפות/);
+});
+
 test("an unrelated item in Other does not give an absent apparatus capacity", () => {
   assert.equal(workoutEquipment(exercise("trx", "גב", "TRX"), [{name_he:"חבל", category:"other", quantity:12}]).capacity, 0);
   const plan = planWorkoutBlocks({...options, pool:lower});
