@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {studioProfileFromRequest} from "../../../lib/studio-auth";
-import {nextSessionIndex,selfServiceAccess,studioCalendarDate} from "../../../lib/self-service-access";
+import {loadCurrentProgram,nextSessionIndex,selfServiceAccess} from "../../../lib/self-service-access";
 
 export const dynamic="force-dynamic";
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
@@ -14,14 +14,7 @@ export async function GET(req) {
  if(profile.role!=="trainee")return reply({error:"אזור זה מיועד למתאמנות"},403);
 
  const now=new Date();
- const today=studioCalendarDate(now);
- // A future assignment must not replace the current program before it starts.
- // The latest assignment that has started still determines equipment approval.
- const {data:program,error:programError}=await db.from("biss_programs")
-  .select("id,coach_id,title,summary,program_payload,equipment_access,status,approved_at,starts_on,ends_on")
-  .eq("trainee_id",profile.id).eq("status","active")
-  .or(`starts_on.is.null,starts_on.lte.${today}`)
-  .order("created_at",{ascending:false}).order("id",{ascending:false}).limit(1).maybeSingle();
+ const {data:program,error:programError}=await loadCurrentProgram(db,profile.id,now);
  if(programError)return reply({error:"לא ניתן לטעון את התוכנית"},503);
 
  const access=selfServiceAccess(profile,program,now);

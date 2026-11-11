@@ -1,23 +1,18 @@
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {studioProfileFromRequest} from "../../../lib/studio-auth";
-import {selfServiceAccess} from "../../../lib/self-service-access";
+import {loadCurrentWorkout} from "../../../lib/self-service-access";
 
 export const dynamic="force-dynamic";
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
-async function authorizedProgram(db,profile,programId,sessionIndex){
- const{data:program,error}=await db.from("biss_programs").select("id,trainee_id,coach_id,program_payload,equipment_access,status,approved_at,starts_on,ends_on").eq("id",programId).eq("trainee_id",profile.id).single();
- const sessions=Array.isArray(program?.program_payload?.sessions)?program.program_payload.sessions:[];
- if(error||!program||!sessions[sessionIndex]||!selfServiceAccess(profile,program).equipment)return null;
- return program;
-}
 export async function POST(req){
  const db=supabaseAdmin();if(!db)return reply({error:"שירות Studio אינו מחובר"},503);
  const{profile,error,status}=await studioProfileFromRequest(req,db);if(error)return reply({error},status);if(profile.role!=="trainee")return reply({error:"אזור זה מיועד למתאמנות"},403);
  const body=await req.json(),programId=String(body.program_id||""),sessionIndex=Number(body.session_index);
  if(body.action==="start"){
   if(!Number.isInteger(sessionIndex)||sessionIndex<0)return reply({error:"אימון לא תקין"},400);
-  if(!await authorizedProgram(db,profile,programId,sessionIndex))return reply({error:"האימון אינו מאושר"},403);
+  const workout=await loadCurrentWorkout(db,profile,programId,sessionIndex);
+  if(workout.error)return reply({error:workout.error},workout.status);
   const {data:started,error:startError}=await db.rpc("studio_start_training_run",{
    p_trainee_id:profile.id,p_program_id:programId,p_session_index:sessionIndex
   }).maybeSingle();
