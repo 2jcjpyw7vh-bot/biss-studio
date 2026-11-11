@@ -1,8 +1,30 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {nextSessionIndex,selfServiceAccess} from "../lib/self-service-access.js";
+import {loadCurrentWorkout,nextSessionIndex,selfServiceAccess} from "../lib/self-service-access.js";
 
 const trainee={role:"trainee",status:"active"};
+
+test("direct workout links require the current approved assignment",async()=>{
+ const profile={...trainee,id:"trainee-qa"};
+ const program={id:"current",status:"active",approved_at:"2026-11-10T08:00:00Z",coach_id:"coach",equipment_access:true,program_payload:{sessions:[{name:"אימון"}]}};
+ const now=new Date("2026-11-10T22:00:00Z");
+ const db={from(table){
+  assert.equal(table,"biss_programs");
+  return {
+   select(){return this},
+   eq(field,value){assert.equal(value,{trainee_id:profile.id,status:"active"}[field]);return this},
+   or(filter){assert.equal(filter,"starts_on.is.null,starts_on.lte.2026-11-11");return this},
+   order(){return this},
+   limit(value){assert.equal(value,1);return this},
+   async maybeSingle(){return {data:program}}
+  };
+ }};
+ assert.equal((await loadCurrentWorkout(db,profile,"old",0,now)).status,404);
+ assert.equal((await loadCurrentWorkout(db,profile,"current",1,now)).status,404);
+ assert.equal((await loadCurrentWorkout(db,profile,"current",0,now)).session.name,"אימון");
+ program.equipment_access=false;
+ assert.equal((await loadCurrentWorkout(db,profile,"current",0,now)).status,403);
+});
 test("unregistered or inactive people are denied self-service access",()=>{
  assert.equal(selfServiceAccess(null,null).mode,"denied");
  assert.equal(selfServiceAccess({role:"trainee",status:"inactive"},null).mode,"denied");
