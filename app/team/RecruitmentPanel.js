@@ -1,4 +1,6 @@
 "use client";
+
+import {studioShareMessage} from "../../lib/studio-share-message";
 import {useState} from "react";
 import {recruitmentDate} from "../../lib/recruitment";
 import RecruitmentPayment from "./RecruitmentPayment";
@@ -144,6 +146,8 @@ export default function RecruitmentPanel({pin,sessions,onAssigned}) {
           <label className="field">קישור לפרסום<input value={link} dir="ltr" readOnly onFocus={e=>e.target.select()}/></label>
           <div className="row">
             <a className="btn" href={link} target="_blank" rel="noreferrer">פתיחת הקישור</a>
+            <a className="btn green" href={`https://wa.me/?text=${encodeURIComponent(studioShareMessage("recruitment",post.terms.title,link))}`} target="_blank" rel="noreferrer">שיתוף ב־WhatsApp</a>
+            <button className="btn" type="button" onClick={async()=>{try{await navigator.clipboard.writeText(studioShareMessage("recruitment",post.terms.title,link));setMessage("ההודעה הועתקה.");}catch{setMessage("לא ניתן להעתיק את ההודעה.");}}}>העתקת הודעה</button>
             <button className="btn" type="button" onClick={async()=>{try{await navigator.clipboard.writeText(link);setMessage("הקישור הועתק.");}catch{setMessage("אפשר להעתיק את הקישור מהשדה.");}}}>העתקת קישור</button>
             <button className="btn" disabled={busy} onClick={()=>run(async()=>{await request("",{action:"close",id:post.id});await load(post.id);await list();})}>סגירת הפרסום</button>
           </div>

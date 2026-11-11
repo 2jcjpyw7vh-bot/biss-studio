@@ -1,4 +1,5 @@
 "use client";
+import StudioSocialLinks from "../../StudioSocialLinks";
 import {useEffect,useState} from "react";
 import {useParams} from "next/navigation";
 import {recruitmentDate,shekels} from "../../../lib/recruitment";
@@ -86,5 +87,5 @@ export default function RecruitmentPage() {
       </form>}
     </>}
     {message&&<p role="status" className={saved?"safe":"notice"}>{message}</p>}
-  </section></main>;
+  </section><StudioSocialLinks/></main>;
 }
