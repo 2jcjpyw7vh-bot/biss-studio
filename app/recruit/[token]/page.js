@@ -1,10 +1,46 @@
 "use client";
 import StudioSocialLinks from "../../StudioSocialLinks";
 import {certificateMaxBytes} from "../../../lib/recruitment-certificate";
-import {useEffect,useState} from "react";
+import {Fragment,useEffect,useState} from "react";
 import {useParams} from "next/navigation";
 import {recruitmentDate,shekels} from "../../../lib/recruitment";
 import RecruitmentPayment from "../../team/RecruitmentPayment";
+import StationRotation from "../../StationRotation";
+import WorkoutTiming from "../../WorkoutTiming";
+import {sharedWorkoutPlan,trioStationLabel} from "../../../lib/workout-structure";
+
+function PublishedWorkout({slot}) {
+  const workout=slot.workoutPlan;
+  const plan=workout?sharedWorkoutPlan(workout):null;
+  if(!plan&&!slot.workout.length&&!slot.playlist)return null;
+
+  return <details>
+    <summary>תוכנית האימון</summary>
+    {plan&&<>
+      {plan.duration&&<p><strong>{plan.duration} דקות</strong></p>}
+      <WorkoutTiming workout={workout}/>
+      <StationRotation workout={workout}/>
+      {!!workout.warm.length&&<p className="small">{workout.warm.join(" · ")}</p>}
+      {plan.exercises.map((item,index)=>{
+        const section=plan.sections.find(section=>section.start===index);
+        const allocation=workout.stationRotation?.length?item.allocation:trioStationLabel(item);
+        return <Fragment key={index}>
+          {section&&<div className="section-title"><div>
+            <strong>{section.title}</strong><p className="small">{section.detail}</p>
+          </div></div>}
+          <div className="workout-item">
+            <strong>{index+1}. {item.he}</strong>
+            <div>{item.prescription}</div>
+            {allocation&&<div className="small">{allocation}</div>}
+          </div>
+        </Fragment>;
+      })}
+      {!!workout.cool.length&&<p className="small">{workout.cool.join(" · ")}</p>}
+    </>}
+    {!plan&&!!slot.workout.length&&<ul>{slot.workout.map((item,index)=><li key={index}>{item.name} · {item.prescription}</li>)}</ul>}
+    {slot.playlist&&<a className="btn" href={slot.playlist} target="_blank" rel="noreferrer">פתיחת הפלייליסט</a>}
+  </details>;
+}
 
 export default function RecruitmentPage() {
   const {token}=useParams();
@@ -67,11 +103,7 @@ export default function RecruitmentPage() {
           <span><strong>{slot.title}</strong> · {recruitmentDate.format(new Date(slot.startsAt))} · {shekels(slot.pay)}</span>
         </label>
         <p className="small">הגעה {slot.visit}</p>
-        {(slot.workout.length>0||slot.playlist)&&<details>
-          <summary>תוכנית האימון</summary>
-          {slot.workout.length>0&&<ul>{slot.workout.map((item,index)=><li key={index}>{item.name} · {item.prescription}</li>)}</ul>}
-          {slot.playlist&&<a className="btn" href={slot.playlist} target="_blank" rel="noreferrer">פתיחת הפלייליסט</a>}
-        </details>}
+        <PublishedWorkout slot={slot}/>
       </article>)}
       <RecruitmentPayment terms={terms} ids={selected}/>
       {!saved&&<form onSubmit={submit} className="save-workout-panel">

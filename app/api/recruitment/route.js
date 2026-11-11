@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {verifyAdminPin} from "../../../lib/admin-pin";
-import {isRecruitmentId,recruitmentApprovalError,recruitmentText,shekelsToAgorot} from "../../../lib/recruitment";
+import {isRecruitmentId,recruitmentApprovalError,recruitmentText,recruitmentWorkoutFields,shekelsToAgorot} from "../../../lib/recruitment";
 import {certificateExtension} from "../../../lib/recruitment-certificate";
 
 export const dynamic="force-dynamic";
@@ -91,11 +91,11 @@ export async function POST(req) {
     const day=localDay.format(new Date(session.starts_at));
     if(days.has(entry.visit)&&days.get(entry.visit)!==day)return reply({error:"אפשר לקבץ להגעה אחת רק אימונים באותו יום"},400);
     days.set(entry.visit,day);
-    const exercises=session.workout_payload?.exercises;
-    const workout=body.showWorkout===true&&Array.isArray(exercises)
-      ? exercises.slice(0,20).map(item=>({name:recruitmentText(item?.he,120),prescription:recruitmentText(item?.prescription,160)})).filter(item=>item.name) : [];
-    const playlist=body.showWorkout===true&&/^https?:\/\//i.test(session.playlist_url||"")?session.playlist_url:"";
-    slots.push({...entry,title:session.title,startsAt:session.starts_at,originalInstructorId:session.instructor_id,originalInstructorName:session.instructor_name,workout,playlist});
+    slots.push({
+      ...entry,title:session.title,startsAt:session.starts_at,
+      originalInstructorId:session.instructor_id,originalInstructorName:session.instructor_name,
+      ...recruitmentWorkoutFields(session,body.showWorkout===true)
+    });
   }
   slots.sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt));
   const terms={title,address,travelSingle,travelMultiple,slots,
