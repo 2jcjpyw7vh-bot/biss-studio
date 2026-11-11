@@ -174,7 +174,7 @@ export default function TrainingRunner(){
     <li>חזרי לאימון ולחצי על ״תצוגת מסך״.</li>
    </ol>
   </details>}
-  <WorkoutPlaylist key={`${programId}:${sessionIndex}`} url={data.session.musicUrl} title={data.session.musicTitle}/>
+  <WorkoutPlaylist key={`${programId}:${sessionIndex}`} url={data.session.musicUrl} title={data.session.musicTitle} playlists={data.session.playlists}/>
   <IntervalTimer/>
   {!item?<section className="runner-stage"><h1>לא הוגדרו תרגילים באימון זה</h1></section>:<section className="runner-stage">
    <div className="runner-progress">תרגיל {current+1} מתוך {items.length}</div>
