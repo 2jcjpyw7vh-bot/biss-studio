@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {planStationRotation} from "../lib/station-rotation.js";
+import {planStationRotation,stationPlaces} from "../lib/station-rotation.js";
 import {studioWorkoutFields} from "../lib/studio-workout-payload.js";
 import {workoutTimeline} from "../lib/workout-structure.js";
 
@@ -31,4 +31,11 @@ test("shared stations never put two people on the same step",()=>{
 test("a plan cannot promise places or a full rotation that do not fit",()=>{
   assert.equal(planStationRotation([step],inventory,9,34,"functional-hiit","מעורב"),null);
   assert.equal(planStationRotation(bodyweight,inventory,40,13,"functional-hiit","מעורב"),null);
+});
+
+test("the assignment list distinguishes two places in one station",()=>{
+  assert.deepEqual(stationPlaces([1,2,3,2]),[
+    {station:1,label:"1"},{station:2,label:"2.1"},{station:3,label:"3"},{station:2,label:"2.2"}
+  ]);
+  assert.deepEqual(stationPlaces([0,1]),[]);
 });
