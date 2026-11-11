@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {verifyAdminPin} from "../../../lib/admin-pin";
 import {isRecruitmentId,recruitmentText,shekelsToAgorot} from "../../../lib/recruitment";
+import {certificateExtension} from "../../../lib/recruitment-certificate";
 
 export const dynamic="force-dynamic";
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
@@ -13,12 +14,27 @@ export async function GET(req) {
   if(!await verifyAdminPin(req))return reply({error:"נדרש PIN מנהל"},401);
   const db=supabaseAdmin();
   if(!db)return reply({error:"שירות Studio אינו זמין"},503);
-  const id=new URL(req.url).searchParams.get("id");
+  const params=new URL(req.url).searchParams;
+  const certificate=params.get("certificate");
+  if(certificate!==null){
+    if(!isRecruitmentId(certificate))return reply({error:"מזהה מועמדות אינו תקין"},400);
+    const {data,error}=await applications(db).select("certificate_mime,certificate_base64").eq("id",certificate).maybeSingle();
+    if(error)return reply({error:"לא ניתן לטעון את התעודה"},503);
+    const extension=certificateExtension(data?.certificate_mime);
+    if(!extension||!data.certificate_base64)return reply({error:"לא צורפה תעודה"},404);
+    return new Response(Buffer.from(data.certificate_base64,"base64"),{headers:{
+      "Content-Type":data.certificate_mime,
+      "Content-Disposition":`attachment; filename="studio-certificate.${extension}"`,
+      "Cache-Control":"no-store",
+      "X-Content-Type-Options":"nosniff"
+    }});
+  }
+  const id=params.get("id");
   if(id!==null) {
     if(!isRecruitmentId(id))return reply({error:"מזהה פרסום אינו תקין"},400);
     const [post,people]=await Promise.all([
       posts(db).select("*").eq("id",id).maybeSingle(),
-      applications(db).select("*").eq("post_id",id).order("created_at",{ascending:false}).limit(150)
+      applications(db).select("id,post_id,name,email,phone,qualifications,experience,note,requested_ids,approved_ids,created_at,professional_insurance,certificate_mime").eq("post_id",id).order("created_at",{ascending:false}).limit(150)
     ]);
     if(post.error||people.error)return reply({error:"לא ניתן לטעון מועמדויות"},503);
     if(!post.data)return reply({error:"הפרסום לא נמצא"},404);
