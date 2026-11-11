@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import {useParams,useRouter} from "next/navigation";
 import {supabaseBrowser} from "../../../../lib/supabase-browser";
 
@@ -15,6 +15,9 @@ export default function TrainingRunner(){
  const [current,setCurrent]=useState(0),[seconds,setSeconds]=useState(defaultTimerSeconds);
  const [deadline,setDeadline]=useState(null);
  const [runId,setRunId]=useState(""),[busy,setBusy]=useState(false);
+ const [presenting,setPresenting]=useState(false);
+ const runnerRef=useRef(null);
+ const presentationButtonRef=useRef(null);
 
  async function accessToken() {
   const {data:auth}=await client.auth.getSession();
@@ -107,7 +110,40 @@ export default function TrainingRunner(){
   setSeconds(defaultTimerSeconds);
   setCurrent(value=>value+offset);
  }
- const fullscreen=()=>document.documentElement.requestFullscreen?.();
+ async function togglePresentation(){
+  const runner=runnerRef.current;
+  if(presenting){
+   setPresenting(false);
+   if(document.fullscreenElement===runner)await document.exitFullscreen().catch(()=>{});
+   return;
+  }
+  setPresenting(true);
+  if(document.fullscreenEnabled&&typeof runner?.requestFullscreen==="function"){
+   try {await runner.requestFullscreen();} catch {/* Keep the in-page presentation. */}
+  }
+ }
+
+ useEffect(()=>{
+  if(!presenting)return;
+  const runner=runnerRef.current;
+  const previousOverflow=document.body.style.overflow;
+  document.body.style.overflow="hidden";
+  function onFullscreenChange(){
+   if(!document.fullscreenElement)setPresenting(false);
+  }
+  function onKeyDown(event){
+   if(event.key==="Escape"&&!document.fullscreenElement)setPresenting(false);
+  }
+  document.addEventListener("fullscreenchange",onFullscreenChange);
+  document.addEventListener("keydown",onKeyDown);
+  return()=>{
+   document.body.style.overflow=previousOverflow;
+   document.removeEventListener("fullscreenchange",onFullscreenChange);
+   document.removeEventListener("keydown",onKeyDown);
+   if(document.fullscreenElement===runner)document.exitFullscreen().catch(()=>{});
+   presentationButtonRef.current?.focus({preventScroll:true});
+  };
+ },[presenting]);
 
  async function finish() {
   setBusy(true);
@@ -124,8 +160,8 @@ export default function TrainingRunner(){
  }
  if(!data)return <main className="training-runner"><section className="panel"><h2>{message}</h2><Link className="btn" href="/my-program">חזרה לתוכנית</Link></section></main>;
  const items=data.session.items,item=items[current];
- return <main className="training-runner">
-  <header className="runner-topbar"><div><div className="eyebrow">BISS STUDIO · {data.program.title}</div><strong>{data.session.name}</strong></div><div className="row"><button className="btn" onClick={fullscreen}>מסך מלא</button><button className="btn green" disabled={!runId||busy} onClick={finish}>סיום ושמירה</button></div></header>
+ return <main className={`training-runner${presenting?" runner-presenting":""}`} ref={runnerRef}>
+  <header className="runner-topbar"><div><div className="eyebrow">BISS STUDIO · {data.program.title}</div><strong>{data.session.name}</strong></div><div className="row"><button className="btn" ref={presentationButtonRef} onClick={togglePresentation} aria-pressed={presenting}>{presenting?"יציאה מתצוגת מסך":"תצוגת מסך"}</button><button className="btn green" disabled={!runId||busy} onClick={finish}>סיום ושמירה</button></div></header>
   {message&&<div className="notice" role="status">{message}</div>}
   {!runId&&!busy&&<button className="btn" onClick={()=>startRun()}>ניסיון חוזר להפעלת מעקב</button>}
   {data.session.musicUrl&&<a className="btn" href={data.session.musicUrl} target="_blank" rel="noreferrer">פתיחת פלייליסט · {data.session.musicTitle}</a>}
@@ -139,6 +175,16 @@ export default function TrainingRunner(){
    {seconds===0&&<div className="safe"><strong>הזמן הסתיים</strong> — עברו לתרגיל הבא כשאתם מוכנים.</div>}
    <div className="runner-controls"><button className="btn" disabled={current===0} onClick={()=>moveExercise(-1)}>הקודם</button>{item.id&&<Link className="btn" href={`/exercise/${item.id}`} target="_blank">הסבר לתרגיל</Link>}<button className="btn primary" disabled={current===items.length-1} onClick={()=>moveExercise(1)}>הבא</button></div>
   </section>}
-  <footer className="runner-footer"><strong>הקרנה למסך:</strong> הפעילו שיקוף מסך או Cast במכשיר לאחר התחברות לרשת הסטודיו. המערכת אינה מתחברת אוטומטית למסך. <span>בכאב או תחושה חריגה מפסיקים מיד.</span></footer>
+  <footer className="runner-footer">
+   {!presenting&&<details>
+    <summary>איך מקרינים למסך הסטודיו?</summary>
+    <ol>
+     <li>התחברי לרשת ה־Wi-Fi של הסטודיו.</li>
+     <li>פתחי שיקוף מסך או Cast במכשיר ובחרי במסך הסטודיו.</li>
+     <li>חזרי לאימון ובחרי ״תצוגת מסך״.</li>
+    </ol>
+   </details>}
+   <span>בכאב או תחושה חריגה מפסיקים מיד.</span>
+  </footer>
  </main>
 }
