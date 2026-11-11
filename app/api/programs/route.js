@@ -10,7 +10,24 @@ const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Co
 const safeProgram=value=>({title:clean(value?.title,180),meta:clean(value?.meta,400),musicUrl:programPlaylistUrl(value?.musicUrl),musicTitle:clean(value?.musicTitle,120),sessions:Array.isArray(value?.sessions)?value.sessions.slice(0,60).map(session=>({name:clean(session?.name,120),progression:clean(session?.progression,80),musicUrl:programPlaylistUrl(session?.musicUrl),musicTitle:clean(session?.musicTitle,120),items:Array.isArray(session?.items)?session.items.slice(0,20).map(item=>({id:clean(item?.id,100),he:clean(item?.he,120),en:clean(item?.en,120),equipment:clean(item?.equipment,120),prescription:clean(item?.prescription,180),cue:clean(item?.cue,300)})):[]})):[]});
 
 async function snapshot(db){const[trainees,coaches,programs]=await Promise.all([db.from("biss_users").select("id,full_name").eq("role","trainee").eq("status","active").order("full_name"),db.from("biss_users").select("id,full_name,role").in("role",["manager","instructor"]).eq("status","active").order("full_name"),db.from("biss_programs").select("id,trainee_id,coach_id,title,status,equipment_access,starts_on,ends_on,created_at").order("created_at",{ascending:false}).limit(50)]);const error=trainees.error||coaches.error||programs.error;if(error)throw error;return{trainees:trainees.data||[],coaches:coaches.data||[],programs:programs.data||[]}}
-export async function GET(req){if(!await verifyAdminPin(req))return reply({error:"נדרש PIN מנהל"},401);const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);try{return reply(await snapshot(db))}catch{return reply({error:"לא ניתן לטעון תוכניות"},503)}}
+export async function GET(req) {
+  if (!await verifyAdminPin(req)) return reply({error:"נדרש PIN מנהל"},401);
+  const db = supabaseAdmin();
+  if (!db) return reply({error:"מסד Studio אינו מחובר"},503);
+  const traineeId = new URL(req.url).searchParams.get("trainee_id");
+  if (traineeId !== null) {
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(traineeId)) {
+      return reply({error:"מזהה המתאמנת אינו תקין"},400);
+    }
+    const {data:programs,error} = await db.from("biss_programs")
+      .select("id,coach_id,title,status,equipment_access,approved_at,starts_on,ends_on")
+      .eq("trainee_id",traineeId).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(50);
+    if (error) return reply({error:"לא ניתן לטעון את השיוכים של המתאמנת"},503);
+    return reply({programs});
+  }
+  try { return reply(await snapshot(db)); }
+  catch { return reply({error:"לא ניתן לטעון את רשימת המשתמשות"},503); }
+}
 export async function POST(req) {
   if (!await verifyAdminPin(req)) return reply({error:"PIN שגוי"},401);
   const db = supabaseAdmin();
