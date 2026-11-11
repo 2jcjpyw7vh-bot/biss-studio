@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import {useEffect,useState} from "react";
 import {useParams} from "next/navigation";
 import BoneDemoLinks from "../../exercise/BoneDemoLinks";
@@ -30,6 +31,9 @@ export default function SubstituteOffer(){
   <div className="sub">{new Date(s.starts_at).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem"})} · שעון ישראל</div>
   {data.show_workout?<div className="safe"><strong>האימון כבר מוכן</strong><p style={{whiteSpace:"pre-line"}}>{s.workout_summary||"תוכנית האימון תעודכן לפני מועד האימון."}</p></div>:<div className="notice"><strong>פרטי האימון שמורים בסטודיו</strong><p>תוכנית האימון והפלייליסט יימסרו לאחר אישור השיבוץ.</p></div>}
   {s.playlist_url&&<a className="btn" href={s.playlist_url} target="_blank" rel="noreferrer">פתיחת הפלייליסט</a>}
+  {!!s.exercises?.length&&<div className="row" aria-label="דפי תרגילים">
+   {s.exercises.map(({id,he},index)=><Link className="btn" key={index} href={`/exercise/${encodeURIComponent(id)}`} target="_blank" rel="noopener noreferrer">{he}</Link>)}
+  </div>}
   <BoneDemoLinks demos={s.bone_demos}/>
   {data.message&&<p>{data.message}</p>}
   {active?<div className="row"><button className="btn primary" disabled={busy} onClick={()=>decide("accepted")}>מתאימה לי — אישור</button><button className="btn" disabled={busy} onClick={()=>decide("declined")}>לא מתאימה הפעם</button></div>:<div className="notice">{finalMessages[state]||"ההצעה אינה פעילה."}</div>}

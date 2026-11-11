@@ -19,6 +19,7 @@ export default function TrainingRunner(){
  return <main className="training-runner">
   <header className="runner-topbar"><div><div className="eyebrow">BISS STUDIO · {data.program.title}</div><strong>{data.session.name}</strong></div><div className="row"><button className="btn" onClick={fullscreen}>מסך מלא</button><button className="btn green" disabled={!runId} onClick={finish}>סיום ושמירה</button></div></header>
   {message&&<div className="notice">{message}</div>}
+  {data.session.musicUrl&&<a className="btn" href={data.session.musicUrl} target="_blank" rel="noreferrer">פתיחת פלייליסט · {data.session.musicTitle}</a>}
   {!item?<section className="runner-stage"><h1>לא הוגדרו תרגילים באימון זה</h1></section>:<section className="runner-stage">
    <div className="runner-progress">תרגיל {current+1} מתוך {items.length}</div>
    <h1>{item.he}</h1>{item.en&&<div className="runner-english">{item.en}</div>}
@@ -32,4 +33,3 @@ export default function TrainingRunner(){
   <footer className="runner-footer"><strong>הקרנה למסך:</strong> הפעילו שיקוף מסך או Cast במכשיר לאחר התחברות לרשת הסטודיו. המערכת אינה מתחברת אוטומטית למסך. <span>בכאב או תחושה חריגה מפסיקים מיד.</span></footer>
  </main>
 }
-

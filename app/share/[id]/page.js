@@ -4,6 +4,7 @@ import {sharedWorkoutPlan} from "../../../lib/workout-structure";
 import {boneDemos,BONE_NOTICE} from "../../../lib/bone-strength";
 import BoneDemoLinks from "../../exercise/BoneDemoLinks";
 import WorkoutTiming from "../../WorkoutTiming";
+import ProgramSessionDetails from "../../programs/ProgramSessionDetails";
 function Music({url,title}){return url?<div className="music">🎧 <a href={url} target="_blank" rel="noreferrer">פתחו ב-Spotify · {title||"מוזיקה"}</a></div>:null}
 export default async function SharePage({params}){const {id}=await params,db=supabaseAdmin();if(!db)return <main className="shell"><div className="panel"><h2>השיתוף עדיין לא מחובר</h2></div></main>;const {data}=await db.from("shared_items").select("*").eq("id",id).single();if(!data)return <main className="shell"><div className="panel"><h2>הקישור לא נמצא</h2></div></main>;const p=data.payload,plan=data.type==="workout"?sharedWorkoutPlan(p):null;return <main className="shell"><div className="preview-header"><img className="preview-logo" src="/biss-logo.png" alt="BISS"/></div><section className="panel">
 {data.type==="exercise"&&<><h1>{p.he}</h1><div className="sub">{p.en}</div><div className="tags" style={{margin:"12px 0"}}><span className="tag green">{p.region}</span><span className="tag blue">{p.equipment}</span></div><p><strong>עובד בעיקר על:</strong> {p.muscles}</p><p><strong>דגש:</strong> {p.cue}</p>{p.regression&&<p className="small">אפשרות קלה יותר: {p.regression}</p>}{p.safety&&<div className="notice">{p.safety}</div>}<Music url={p.musicUrl}/></>}
@@ -27,5 +28,10 @@ export default async function SharePage({params}){const {id}=await params,db=sup
   <BoneDemoLinks demos={boneDemos(p)}/>
 </>}
 {data.type==="homework"&&<><h1>{p.title}</h1><div className="sub">{p.meta}</div><Music url={p.musicUrl} title={p.musicTitle}/>{p.note&&<div className="safe">הערת המדריכה: {p.note}</div>}{p.items?.map((x,i)=><div className="workout-item" key={i}><strong>{i+1}. {x.he}</strong><div>{x.prescription}</div><div className="small">{x.cue}</div></div>)}<div className="notice">אם מופיע כאב משמעותי, החמרה, נימול/הקרנה או תחושה חריגה — להפסיק ולפנות למדריכה/איש מקצוע מתאים.</div></>}
-{data.type==="program"&&<><h1>{p.title}</h1><div className="sub">{p.meta}</div><Music url={p.musicUrl} title={p.musicTitle}/>{p.sessions?.map((s,i)=><div className="card" style={{marginTop:10}} key={i}><h3>{s.name}</h3><div className="small">{s.progression}</div>{s.items?.map((x,j)=><div className="workout-item" key={j}><strong>{x.he}</strong> · {x.prescription}</div>)}</div>)}</>}
+{data.type==="program"&&<><h1>{p.title}</h1><div className="sub">{p.meta}</div>
+  {p.sessions?.map((session,index)=><article className="card" style={{marginTop:10}} key={index}>
+    <h3>{session.name}</h3><p className="small">{session.progression}</p>
+    <ProgramSessionDetails program={p} session={session}/>
+  </article>)}
+</>}
 </section><footer className="footer">BISS</footer></main>}
