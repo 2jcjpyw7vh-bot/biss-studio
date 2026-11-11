@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {BONE_TYPE, boneDemos, boneExercisesForLevel} from "../lib/bone-strength.js";
-import {LOWER_BODY, UPPER_BODY, matchesBodyRegion, planWorkoutBlocks, workoutEquipment} from "../lib/workout-structure.js";
+import {LOWER_BODY, UPPER_BODY, matchesBodyRegion, planWorkoutBlocks, workoutEquipment, workoutTimeline} from "../lib/workout-structure.js";
 import {publicSubstituteOffer} from "../lib/substitute-privacy.js";
 
 test("body presets share the block map and one selected preset creates only one block", () => {
@@ -31,6 +31,29 @@ test("short beginner lesson has usable station timing, no jumps or advanced cata
   assert.ok(plan.sections.length >= 2);
   assert.ok(plan.sections.every(x => !x.detail.includes("0 סבבים")));
   assert.ok(plan.exercises.every(x => x.level === "מתחילים" && !/jump|impact/i.test(x.pattern)));
+});
+
+test("a 30-minute Studio bone-strength workout has two complete blocks and optional balance", () => {
+  const catalog=boneExercisesForLevel("מעורב");
+  const inventory=[
+    {name_he:"גומיות התנגדות",category:"bands",quantity:12},
+    {name_he:"כיסאות",category:"other",quantity:4},
+    {name_he:"מדרגה",category:"cardio",quantity:1}
+  ];
+  const options={pool:catalog.filter(x=>!x.closing),inventory,people:9,minutes:30,level:"מעורב",type:BONE_TYPE};
+  const plan=planWorkoutBlocks({...options,finisherPool:catalog});
+  assert.deepEqual(plan.sections.map(section=>section.start),[0,3,6]);
+  assert.equal(plan.exercises.length,8);
+  assert.ok(plan.exercises.some(item=>item.id==="bone-sit-to-stand"));
+  assert.ok(plan.exercises.some(item=>item.id==="bone-kneeling-side-plank"));
+  assert.ok(!plan.exercises.some(item=>item.id==="bone-step"));
+  assert.deepEqual(workoutTimeline({...plan,durationMinutes:30,warm:["6 דק׳"],cool:["5 דק׳"],transitionMinutes:2}),{
+    warm:6,main:13,finisher:4,transition:2,cool:5
+  });
+  assert.equal(planWorkoutBlocks(options).sections.length,2);
+  const rejected=planWorkoutBlocks({...options,pool:[catalog.find(x=>x.id==="bone-wall-press")]});
+  assert.match(rejected.error,/פלג גוף עליון: 1.*פלג גוף תחתון: 0/);
+  assert.equal(rejected.exercises,undefined);
 });
 
 test("a bike cannot satisfy the equipment requirement of a step-up station", () => {
