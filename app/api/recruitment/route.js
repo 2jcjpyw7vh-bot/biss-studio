@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {verifyAdminPin} from "../../../lib/admin-pin";
-import {isRecruitmentId,recruitmentText,shekelsToAgorot} from "../../../lib/recruitment";
+import {isRecruitmentId,recruitmentApprovalError,recruitmentText,shekelsToAgorot} from "../../../lib/recruitment";
 import {certificateExtension} from "../../../lib/recruitment-certificate";
 
 export const dynamic="force-dynamic";
@@ -52,6 +52,13 @@ export async function POST(req) {
   if(body?.action==="approve") {
     const ids=body.sessionIds;
     if(!isRecruitmentId(body.id)||!Array.isArray(ids)||!ids.length||ids.length>20||!ids.every(isRecruitmentId))return reply({error:"בחרי מועמדת ומועדים לאישור"},400);
+    const application=await applications(db).select("professional_insurance,qualifications,approved_ids").eq("id",body.id).maybeSingle();
+    if(application.error)return reply({error:"לא ניתן לבדוק את פרטי המועמדות."},503);
+    if(!application.data)return reply({error:"המועמדות לא נמצאה."},404);
+    if(ids.some(id=>!application.data.approved_ids.includes(id))){
+      const error=recruitmentApprovalError(application.data);
+      if(error)return reply({error},409);
+    }
     const {data,error}=await db.rpc("studio_approve_recruitment",{p_application_id:body.id,p_session_ids:[...new Set(ids)]});
     if(error)return reply({error:"לא ניתן לשמור את השיבוץ. אפשר לנסות שוב."},503);
     return data==="saved"?reply({saved:true}):reply({error:"השיבוץ לא נשמר. אחד המועדים כבר נסגר, שונה או שובץ."},409);

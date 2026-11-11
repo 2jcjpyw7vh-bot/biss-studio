@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {recruitmentPay,recruitmentPublic,shekelsToAgorot} from "../lib/recruitment.js";
+import {recruitmentApprovalError,recruitmentPay,recruitmentPublic,shekelsToAgorot} from "../lib/recruitment.js";
+
+test("recruitment approval requires both a declaration and a qualification",()=>{
+  assert.match(recruitmentApprovalError({professional_insurance:false,qualifications:"הדרכת כושר"}),/ביטוח/);
+  assert.match(recruitmentApprovalError({professional_insurance:true,qualifications:"  "}),/הסמכה/);
+  assert.match(recruitmentApprovalError({}),/ביטוח.*הסמכה/);
+  assert.equal(recruitmentApprovalError({professional_insurance:true,qualifications:"הדרכת כושר"}),"");
+});
 
 const slots=[
   {id:"one",visit:"1",pay:12000},
