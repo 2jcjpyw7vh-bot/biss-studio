@@ -4,6 +4,7 @@ import {sharedWorkoutPlan} from "../../../lib/workout-structure";
 import {boneDemos,BONE_NOTICE} from "../../../lib/bone-strength";
 import BoneDemoLinks from "../../exercise/BoneDemoLinks";
 import WorkoutTiming from "../../WorkoutTiming";
+import StationRotation from "../../StationRotation";
 import ProgramSessionDetails from "../../programs/ProgramSessionDetails";
 function Music({url,title}){return url?<div className="music">🎧 <a href={url} target="_blank" rel="noreferrer">פתחו ב-Spotify · {title||"מוזיקה"}</a></div>:null}
 export default async function SharePage({params}){const {id}=await params,db=supabaseAdmin();if(!db)return <main className="shell"><div className="panel"><h2>השיתוף עדיין לא מחובר</h2></div></main>;const {data}=await db.from("shared_items").select("*").eq("id",id).single();if(!data)return <main className="shell"><div className="panel"><h2>הקישור לא נמצא</h2></div></main>;const p=data.payload,plan=data.type==="workout"?sharedWorkoutPlan(p):null;return <main className="shell"><div className="preview-header"><img className="preview-logo" src="/biss-logo.png" alt="BISS"/></div><section className="panel">
@@ -14,6 +15,7 @@ export default async function SharePage({params}){const {id}=await params,db=sup
   <div className="section-title"><span className="dot blue"/><strong>חימום</strong></div>
   {p.warm?.map((line,i)=><div className="workout-item" key={i}>{line}</div>)}
   <div className="section-title"><span className="dot"/><strong>האימון</strong></div>
+  <StationRotation rotation={p.stationRotation}/>
   {plan.exercises.map((exercise,i)=>{
     const section=plan.sections.find(item=>item.start===i);
     return <Fragment key={i}>
@@ -21,7 +23,7 @@ export default async function SharePage({params}){const {id}=await params,db=sup
         {section.title.startsWith("בלוק 2")&&p.transitionMinutes===2&&<p className="small">2 דק׳ התארגנות בין הבלוקים</p>}
         <h3>{section.title}</h3><p className="small">{section.detail}</p>
       </div></div>}
-      <div className="workout-item"><strong>{i+1}. {exercise.he}</strong><div>{exercise.prescription}</div><div className="small">{exercise.cue}</div></div>
+      <div className="workout-item"><strong>{i+1}. {exercise.he}</strong><div>{exercise.prescription}</div><div className="small">{exercise.cue}</div>{p.stationRotation?.length&&exercise.allocation?<div className="small">{exercise.allocation}</div>:null}</div>
     </Fragment>
   })}
   {p.cool?.length>0&&<><div className="section-title"><span className="dot red"/><strong>שחרור</strong></div>{p.cool.map((line,i)=><div className="workout-item" key={i}>{line}</div>)}</>}
