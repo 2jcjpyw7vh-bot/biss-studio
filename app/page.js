@@ -328,11 +328,17 @@ export default function Home(){
  }
  function buildProgram(){
    const sessions=[];
+   if(!Number.isInteger(programWeeks)||programWeeks<2||programWeeks>12||!Number.isInteger(programFreq)||programFreq<1||programFreq>5){
+     alert("בחרי 2–12 שבועות ו־1–5 אימונים בשבוע.");
+     return;
+   }
    const playlistUrl=programPlaylistUrl(programMusic.musicUrl);
    if(programMusic.musicUrl.trim()&&!playlistUrl){alert("הזיני קישור לפלייליסט שמתחיל ב־https:// או http://.");return;}
+   const eligibleExercises=exerciseLibrary.filter(x=>matchesRegion(x)&&matchesEquipment(x)&&x.goal==="חיזוק");
+   if(!eligibleExercises.length){alert("לא נמצאו תרגילי חיזוק שמתאימים לבחירה. נסי לשנות את אזור הגוף או הציוד.");return;}
    for(let i=0;i<programWeeks*programFreq;i++){
      const week=Math.floor(i/programFreq)+1;
-     const chosen=rand(exerciseLibrary.filter(x=>matchesRegion(x)&&matchesEquipment(x)&&x.goal==="חיזוק")).slice(0,6);
+     const chosen=rand(eligibleExercises).slice(0,6);
      const progression=week===1?"בסיס טכני ועומס שמרני":week===2?"תוספת 1–2 חזרות או מעט משקל":week===3?"העלאת עומס/מורכבות תוך שמירת טכניקה":"התקדמות מבוקרת לפי איכות ביצוע";
      sessions.push({name:`שבוע ${week} · אימון ${(i%programFreq)+1}`,progression,items:chosen.map((x,j)=>({...x,prescription:week<=2?`${10+j%3} חזרות × 3 סטים`:`${8+j%3} חזרות × 3–4 סטים`}))});
    }
