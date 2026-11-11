@@ -1,6 +1,6 @@
 import {supabaseAdmin} from "../../../lib/supabase";
 import {Fragment} from "react";
-import {sharedWorkoutPlan} from "../../../lib/workout-structure";
+import {sharedWorkoutPlan,trioStationLabel} from "../../../lib/workout-structure";
 import {boneDemos,BONE_NOTICE} from "../../../lib/bone-strength";
 import BoneDemoLinks from "../../exercise/BoneDemoLinks";
 import WorkoutTiming from "../../WorkoutTiming";
@@ -18,12 +18,13 @@ export default async function SharePage({params}){const {id}=await params,db=sup
   <StationRotation workout={p}/>
   {plan.exercises.map((exercise,i)=>{
     const section=plan.sections.find(item=>item.start===i);
+    const allocation=p.stationRotation?.length?exercise.allocation:trioStationLabel(exercise);
     return <Fragment key={i}>
       {section&&<div className="section-title"><div>
         {section.title.startsWith("בלוק 2")&&p.transitionMinutes===2&&<p className="small">2 דק׳ התארגנות בין הבלוקים</p>}
         <h3>{section.title}</h3><p className="small">{section.detail}</p>
       </div></div>}
-      <div className="workout-item"><strong>{i+1}. {exercise.he}</strong><div>{exercise.prescription}</div><div className="small">{exercise.cue}</div>{p.stationRotation?.length&&exercise.allocation?<div className="small">{exercise.allocation}</div>:null}</div>
+      <div className="workout-item"><strong>{i+1}. {exercise.he}</strong><div>{exercise.prescription}</div><div className="small">{exercise.cue}</div>{allocation&&<div className="small">{allocation}</div>}</div>
     </Fragment>
   })}
   {p.cool?.length>0&&<><div className="section-title"><span className="dot red"/><strong>שחרור</strong></div>{p.cool.map((line,i)=><div className="workout-item" key={i}>{line}</div>)}</>}
