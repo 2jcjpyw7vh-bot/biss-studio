@@ -589,3 +589,38 @@ input,select,textarea{min-height:46px;border-color:#dce4de;background:#fcfdfc}
     grid-column: 1 / -1;
   }
 }
+
+.training-runner.runner-presenting {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  min-height: 0;
+  width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-block: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-bottom));
+}
+
+.runner-presenting .runner-stage h1 {
+  font-size: clamp(36px, 9vw, 104px);
+  overflow-wrap: anywhere;
+}
+
+.runner-footer details {
+  margin: 0 auto 8px;
+  max-width: 480px;
+  text-align: start;
+}
+
+.runner-footer summary {
+  cursor: pointer;
+  width: fit-content;
+  margin-inline: auto;
+  font-weight: 700;
+  color: #fff;
+}
+
+.runner-footer ol {
+  margin-block: 6px;
+  padding-inline-start: 24px;
+}
