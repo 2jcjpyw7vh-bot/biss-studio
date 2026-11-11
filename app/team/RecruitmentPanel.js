@@ -2,7 +2,7 @@
 
 import {studioShareMessage} from "../../lib/studio-share-message";
 import {useState} from "react";
-import {recruitmentDate} from "../../lib/recruitment";
+import {recruitmentApprovalError,recruitmentDate} from "../../lib/recruitment";
 import RecruitmentPayment from "./RecruitmentPayment";
 
 const money={type:"number",min:0,max:999999.99,step:"0.01"};
@@ -11,6 +11,7 @@ function Applicant({person,terms,taken,open,busy,onApprove,onCertificate}) {
   const [selected,setSelected]=useState([]);
   const approved=person.approved_ids;
   const candidates=terms.slots.filter(slot=>person.requested_ids.includes(slot.id));
+  const approvalError=recruitmentApprovalError(person);
   return <article className="card">
     <h4>{person.name}</h4>
     <p dir="ltr" style={{textAlign:"right"}}>{person.email}{person.phone&&` · ${person.phone}`}</p>
@@ -19,17 +20,19 @@ function Applicant({person,terms,taken,open,busy,onApprove,onCertificate}) {
     {person.certificate_mime&&<button className="btn" type="button" disabled={busy} onClick={()=>onCertificate(person.id)}>הורדת תעודת הסמכה</button>}
     {person.experience&&<p>ניסיון · {person.experience}</p>}
     {person.note&&<p>הערות · {person.note}</p>}
+    {open&&approvalError&&candidates.some(slot=>!approved.includes(slot.id)&&!taken.has(slot.id))&&
+      <p className="notice">השיבוץ ממתין להשלמת פרטי המועמדות. {approvalError}</p>}
     {candidates.map(slot=>{
       const accepted=approved.includes(slot.id);
       const unavailable=taken.has(slot.id)&&!accepted;
       return <label className="permission-check" key={slot.id}>
-        <input type="checkbox" checked={accepted||(!unavailable&&selected.includes(slot.id))} disabled={!open||busy||accepted||unavailable}
+        <input type="checkbox" checked={accepted||(!unavailable&&selected.includes(slot.id))} disabled={!open||busy||accepted||unavailable||Boolean(approvalError)}
           onChange={e=>setSelected(ids=>e.target.checked?[...ids,slot.id]:ids.filter(id=>id!==slot.id))}/>
         <span>{slot.title} · {recruitmentDate.format(new Date(slot.startsAt))}{accepted?" · אושר":unavailable?" · שובץ":""}</span>
       </label>;
     })}
     {approved.length>0&&<><strong>סכום למועדים שאושרו</strong><RecruitmentPayment terms={terms} ids={approved}/></>}
-    {open&&selected.some(id=>!taken.has(id))&&<>
+    {open&&!approvalError&&selected.some(id=>!taken.has(id))&&<>
       <strong>סכום אחרי אישור הבחירה</strong>
       <RecruitmentPayment terms={terms} ids={[...approved,...selected.filter(id=>!taken.has(id))]}/>
       <button className="btn primary" type="button" disabled={busy} onClick={async()=>{
