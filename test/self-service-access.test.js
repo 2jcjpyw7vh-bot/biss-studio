@@ -20,3 +20,15 @@ test("next workout is the first session not completed and restarts after the cyc
  assert.equal(nextSessionIndex(0,[]),0);
 });
 
+test("approval dates include the full Israel calendar day in winter and summer",()=>{
+ for(const [day,start,end] of [
+  ["2026-11-11","2026-11-10T22:00:00Z","2026-11-11T22:00:00Z"],
+  ["2026-07-11","2026-07-10T21:00:00Z","2026-07-11T21:00:00Z"]
+ ]){
+  const program={status:"active",approved_at:"2026-01-01T00:00:00Z",coach_id:"coach",equipment_access:true,starts_on:day,ends_on:day};
+  assert.equal(selfServiceAccess(trainee,program,new Date(Date.parse(start)-1)).equipment,false);
+  assert.equal(selfServiceAccess(trainee,program,new Date(start)).equipment,true);
+  assert.equal(selfServiceAccess(trainee,program,new Date(Date.parse(end)-1)).equipment,true);
+  assert.equal(selfServiceAccess(trainee,program,new Date(end)).equipment,false);
+ }
+});

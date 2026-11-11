@@ -18,15 +18,39 @@ export async function POST(req){
  if(body.action==="start"){
   if(!Number.isInteger(sessionIndex)||sessionIndex<0)return reply({error:"אימון לא תקין"},400);
   if(!await authorizedProgram(db,profile,programId,sessionIndex))return reply({error:"האימון אינו מאושר"},403);
-  const recent=new Date(Date.now()-6*60*60*1000).toISOString();const{data:existing}=await db.from("biss_training_runs").select("id,started_at").eq("trainee_id",profile.id).eq("program_id",programId).eq("session_index",sessionIndex).eq("status","in_progress").gte("started_at",recent).order("started_at",{ascending:false}).limit(1).maybeSingle();if(existing)return reply({run:existing,reused:true});
-  await db.from("biss_training_runs").update({status:"abandoned"}).eq("trainee_id",profile.id).eq("program_id",programId).eq("session_index",sessionIndex).eq("status","in_progress").lt("started_at",recent);
+  const recent=new Date(Date.now()-6*60*60*1000).toISOString();
+  const {data:existing,error:existingError}=await db.from("biss_training_runs").select("id,started_at")
+   .eq("trainee_id",profile.id).eq("program_id",programId).eq("session_index",sessionIndex)
+   .eq("status","in_progress").gte("started_at",recent).order("started_at",{ascending:false}).limit(1).maybeSingle();
+  if(existingError)return reply({error:"לא ניתן לבדוק את מעקב האימון. אפשר לנסות שוב."},503);
+  if(existing)return reply({run:existing,reused:true});
+  const {error:cleanupError}=await db.from("biss_training_runs").update({status:"abandoned"})
+   .eq("trainee_id",profile.id).eq("program_id",programId).eq("session_index",sessionIndex)
+   .eq("status","in_progress").lt("started_at",recent);
+  if(cleanupError)return reply({error:"לא ניתן להתחיל מעקב אימון. אפשר לנסות שוב."},503);
   const{data:run,error:insertError}=await db.from("biss_training_runs").insert({trainee_id:profile.id,program_id:programId,session_index:sessionIndex,status:"in_progress"}).select("id,started_at").single();if(insertError)return reply({error:"לא ניתן להתחיל מעקב אימון"},503);return reply({run,reused:false});
  }
  if(body.action==="complete"){
   const runId=String(body.run_id||"");if(!runId)return reply({error:"חסר רישום אימון"},400);
-  const{data:run,error:readError}=await db.from("biss_training_runs").select("id,started_at").eq("id",runId).eq("trainee_id",profile.id).eq("status","in_progress").single();if(readError||!run)return reply({error:"רישום האימון אינו פעיל"},409);
-  const now=new Date(),duration=Math.min(21600,Math.max(0,Math.floor((now-new Date(run.started_at))/1000)));const{data:completed,error:updateError}=await db.from("biss_training_runs").update({status:"completed",completed_at:now.toISOString(),duration_seconds:duration}).eq("id",run.id).eq("trainee_id",profile.id).eq("status","in_progress").select("id,duration_seconds,completed_at").maybeSingle();if(updateError||!completed)return reply({error:"לא ניתן להשלים את האימון"},409);return reply({run:completed});
+  const completionFields="id,duration_seconds,completed_at";
+  const read=()=>db.from("biss_training_runs").select(`${completionFields},started_at,status`).eq("id",runId).eq("trainee_id",profile.id).maybeSingle();
+  const {data:run,error:readError}=await read();
+  if(readError)return reply({error:"לא ניתן לבדוק את רישום האימון. אפשר לנסות שוב."},503);
+  if(!run||run.status==="abandoned")return reply({error:"רישום האימון אינו פעיל"},409);
+  const completion=({id,duration_seconds,completed_at})=>({id,duration_seconds,completed_at});
+  if(run.status==="completed")return reply({run:completion(run)});
+  const now=new Date();
+  const duration=Math.min(21600,Math.max(0,Math.floor((now-new Date(run.started_at))/1000)));
+  const {data:completed,error:updateError}=await db.from("biss_training_runs")
+   .update({status:"completed",completed_at:now.toISOString(),duration_seconds:duration})
+   .eq("id",run.id).eq("trainee_id",profile.id).eq("status","in_progress")
+   .select(completionFields).maybeSingle();
+  if(updateError)return reply({error:"לא ניתן להשלים את האימון. אפשר לנסות שוב."},503);
+  if(completed)return reply({run:completed});
+  const {data:latest,error:latestError}=await read();
+  if(latestError)return reply({error:"לא ניתן לבדוק אם האימון נשמר. אפשר לנסות שוב."},503);
+  if(latest?.status==="completed")return reply({run:completion(latest)});
+  return reply({error:"רישום האימון אינו פעיל"},409);
  }
  return reply({error:"פעולה לא מוכרת"},400);
 }
-
