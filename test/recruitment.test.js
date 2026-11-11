@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {recruitmentApprovalError,recruitmentPay,recruitmentPublic,shekelsToAgorot} from "../lib/recruitment.js";
+import {recruitmentApprovalError,recruitmentPay,recruitmentPublic,recruitmentWorkoutFields,shekelsToAgorot} from "../lib/recruitment.js";
 
 test("recruitment approval requires both a declaration and a qualification",()=>{
   assert.match(recruitmentApprovalError({professional_insurance:false,qualifications:"הדרכת כושר"}),/ביטוח/);
@@ -34,4 +34,21 @@ test("public view omits original instructor details and hides a changed time or 
   assert.doesNotMatch(JSON.stringify(recruitmentPublic(post,[session],now)),/private-/);
   assert.equal(recruitmentPublic(post,[{...session,instructor_id:"new-id"}],now).slots.length,0);
   assert.equal(recruitmentPublic(post,[{...session,starts_at:"2026-11-13T10:00:00Z"}],now).slots.length,0);
+});
+
+test("publishing a workout carries rotation instructions only when explicitly enabled",()=>{
+  const session={
+    playlist_url:"https://example.com/playlist",
+    workout_payload:{
+      limitationNote:"internal-only",
+      sections:[{start:0,title:"בלוק 1",detail:"פתיחה: א׳ ב־1, ב׳ ב־2, ג׳ ב־3."}],
+      exercises:[{id:"demo",he:"סקוואט",prescription:"40 שנ׳",allocation:"תחנה 1 בבלוק · 3 מקומות"}]
+    }
+  };
+  assert.deepEqual(recruitmentWorkoutFields(session,false),{workout:[],playlist:""});
+  const published=recruitmentWorkoutFields(session,true);
+  assert.match(published.workoutPlan.sections[0].detail,/פתיחה/);
+  assert.match(published.workoutPlan.exercises[0].allocation,/תחנה 1/);
+  assert.doesNotMatch(JSON.stringify(published),/internal-only/);
+  assert.equal(published.playlist,session.playlist_url);
 });
