@@ -21,9 +21,10 @@ async function compareSchedule(db,result){
   ids.length ? db.from("biss_sessions").select("starts_at,arbox_session_id").in("arbox_session_id",ids) : {data:[]}
  ]);
  if(within.error||linked.error||within.data?.length>500){
-  return {...summary,comparisonUnavailable:true,lessons:lessons.map(({scheduleId,...lesson})=>lesson)};
+  return {...summary,comparisonUnavailable:true,lessons};
  }
- return {...summary,lessons:matchArboxSessions(lessons,within.data||[],linked.data||[])};
+ return {...summary,lessons:matchArboxSessions(lessons,within.data||[],linked.data||[])
+   .map((lesson,index)=>({...lesson,scheduleId:lessons[index].scheduleId}))};
 }
 
 export async function GET(req){
@@ -51,5 +52,3 @@ export async function GET(req){
  const connection=await checkArboxConnection();
  return reply({configuration:arboxConfiguration(),connection,mappings:{groups:groupCount.count||0,users:userCount.count||0,sessions:sessionCount.count||0},mode:"read_only_check",writes_enabled:false});
 }
-
-

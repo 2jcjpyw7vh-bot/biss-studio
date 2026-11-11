@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "../../lib/supabase-browser";
+import WorkoutTaskForm from "./WorkoutTaskForm";
 
 const displayDate = value => new Intl.DateTimeFormat("he-IL", {timeZone:"UTC",day:"numeric",month:"numeric"}).format(new Date(`${value}T00:00:00Z`));
 const matchLabels = {
@@ -29,6 +30,8 @@ export default function ArboxPanel() {
   const [scheduleError, setScheduleError] = useState("");
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [needsLogin, setNeedsLogin] = useState(false);
+  const [scheduleToken,setScheduleToken]=useState("");
+  const [selectedLesson,setSelectedLesson]=useState("");
 
   const check = async (event) => {
     event.preventDefault();
@@ -53,6 +56,7 @@ export default function ArboxPanel() {
   const loadSchedule = useCallback(async () => {
     setLoadingSchedule(true);
     setSchedule(null);
+    setSelectedLesson("");
     setScheduleError("");
     setNeedsLogin(false);
     try {
@@ -69,7 +73,10 @@ export default function ArboxPanel() {
         cache: "no-store",
       });
       const result = await response.json();
-      if (response.ok) setSchedule(result);
+      if (response.ok) {
+        setSchedule(result);
+        setScheduleToken(token);
+      }
       else {
         setNeedsLogin(response.status === 401 || response.status === 403);
         setScheduleError(result.error || "טעינת הלוח נכשלה.");
@@ -93,7 +100,7 @@ export default function ArboxPanel() {
       </div>
       <span className="tag blue">קריאה בלבד</span>
     </div>
-    <div className="notice">בדיקת החיבור מציגה את מצב הגישה. לוח השיעורים מוצג בנפרד בכניסה אישית של מנהלת. התצוגה אינה שומרת שיעורים ב־Studio.</div>
+    <div className="notice">בכניסה אישית של מנהלת אפשר לקרוא את הלוח וליצור ממנו משימת בניית אימון ב־Studio.</div>
     <form className="continuity-login" onSubmit={check}>
       <label className="field">PIN מנהל<input type="password" value={pin} onChange={e => setPin(e.target.value)} /></label>
       <button className="btn primary" disabled={!pin || checking}>{checking ? "בודק חיבור…" : "בדיקת חיבור"}</button>
@@ -138,6 +145,8 @@ export default function ArboxPanel() {
             </div>
             <div className="small">{displayDate(lesson.date)} · <bdi>{lesson.start}{lesson.end ? `–${lesson.end}` : ""}</bdi>{lesson.location && ` · ${lesson.location}`}</div>
             <div className="small">{lesson.capacity!==null && `קיבולת ${lesson.capacity}`}{lesson.capacity!==null && lesson.registrations!==null && " · "}{lesson.registrations!==null && `נרשמו ${lesson.registrations}`}</div>
+            {!lesson.cancelled&&lesson.scheduleId&&<button className="btn" onClick={()=>setSelectedLesson(selectedLesson===lesson.scheduleId?"":lesson.scheduleId)}>בקשת בניית אימון</button>}
+            {selectedLesson&&selectedLesson===lesson.scheduleId&&<WorkoutTaskForm key={lesson.scheduleId} lesson={lesson} token={scheduleToken}/>}
           </article>)}
         </>}
       </div>

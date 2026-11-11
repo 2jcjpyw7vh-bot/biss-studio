@@ -5,6 +5,7 @@ import Link from "next/link";
 import {useEffect,useState} from "react";
 import {supabaseBrowser} from "../../lib/supabase-browser";
 import SavedWorkoutLibrary from "./SavedWorkoutLibrary";
+import WorkoutTasksList from "./WorkoutTasksList";
 
 export default function MySessionsPage(){
  const[data,setData]=useState(null),[message,setMessage]=useState("טוען את האימונים שלך…");
@@ -14,6 +15,7 @@ export default function MySessionsPage(){
  return <main className="shell instructor-shell"><div className="row between"><div><div className="eyebrow">BISS STUDIO · אזור מדריכה</div><h1>האימונים שלי</h1></div><Link className="btn" href="/">חזרה למערכת</Link></div>
   {message&&<section className="panel notice">{message} {message.includes("להיכנס")&&<Link href="/login?next=my-sessions">מעבר לכניסה</Link>}</section>}
   <SavedWorkoutLibrary client={client}/>
+  {data&&<WorkoutTasksList/>}
   {data&&<><section className="panel"><h2>אימונים מתוכננים</h2><div className="sub">השיבוצים והמידע הנדרש להכנה, לפי ההרשאות שלך.</div></section>
    {data.sessions.length===0?<section className="panel"><div className="sub">אין כרגע אימונים משויכים אלייך.</div></section>:data.sessions.map(session=>{const g=group(session.group_id),notes=data.handoffs.filter(x=>x.session_id===session.id),limits=data.adaptations.filter(x=>x.group_id===session.group_id);return <article className="panel instructor-session" key={session.id}>
     <div className="row between"><div><h2>{g?.name||"קבוצה"} · {session.title}</h2><div className="sub">{new Date(session.starts_at).toLocaleString("he-IL")} · {g?.level||"רמה מעורבת"}</div></div><span className="tag green">{session.status}</span></div>
