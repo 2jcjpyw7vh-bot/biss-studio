@@ -624,3 +624,41 @@ input,select,textarea{min-height:46px;border-color:#dce4de;background:#fcfdfc}
   margin-block: 6px;
   padding-inline-start: 24px;
 }
+
+.trainee-picker-options {
+  margin: 14px 0;
+}
+
+.trainee-session-list {
+  display: grid;
+  gap: 12px;
+}
+
+.trainee-session-list summary,
+.runner-cast-help summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.runner-cast-help {
+  color: #fff;
+  text-align: start;
+  font-size: 14px;
+}
+
+.runner-cast-help ol {
+  margin-block: 8px 0;
+  padding-inline-start: 24px;
+}
+
+@media (max-width: 600px) {
+  .trainee-picker-options {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .trainee-session-list article > .row > a {
+    width: 100%;
+    text-align: center;
+  }
+}

@@ -164,6 +164,14 @@ export default function TrainingRunner(){
   <header className="runner-topbar"><div><div className="eyebrow">BISS STUDIO · {data.program.title}</div><strong>{data.session.name}</strong></div><div className="row"><button className="btn" ref={presentationButtonRef} onClick={togglePresentation} aria-pressed={presenting}>{presenting?"יציאה מתצוגת מסך":"תצוגת מסך"}</button><button className="btn green" disabled={!runId||busy} onClick={finish}>סיום ושמירה</button></div></header>
   {message&&<div className="notice" role="status">{message}</div>}
   {!runId&&!busy&&<button className="btn" onClick={()=>startRun()}>ניסיון חוזר להפעלת מעקב</button>}
+  {!presenting&&<details className="runner-cast-help">
+   <summary>שיקוף מהטלפון למסך הסטודיו</summary>
+   <ol>
+    <li>התחברי לרשת ה־Wi-Fi של הסטודיו.</li>
+    <li>פתחי את ״שיקוף מסך״ או Cast בהגדרות המהירות של הטלפון ובחרי במסך הסטודיו.</li>
+    <li>חזרי לאימון ולחצי על ״תצוגת מסך״.</li>
+   </ol>
+  </details>}
   {data.session.musicUrl&&<a className="btn" href={data.session.musicUrl} target="_blank" rel="noreferrer">פתיחת פלייליסט · {data.session.musicTitle}</a>}
   {!item?<section className="runner-stage"><h1>לא הוגדרו תרגילים באימון זה</h1></section>:<section className="runner-stage">
    <div className="runner-progress">תרגיל {current+1} מתוך {items.length}</div>
@@ -175,16 +183,6 @@ export default function TrainingRunner(){
    {seconds===0&&<div className="safe"><strong>הזמן הסתיים</strong> — עברו לתרגיל הבא כשאתם מוכנים.</div>}
    <div className="runner-controls"><button className="btn" disabled={current===0} onClick={()=>moveExercise(-1)}>הקודם</button>{item.id&&<Link className="btn" href={`/exercise/${item.id}`} target="_blank">הסבר לתרגיל</Link>}<button className="btn primary" disabled={current===items.length-1} onClick={()=>moveExercise(1)}>הבא</button></div>
   </section>}
-  <footer className="runner-footer">
-   {!presenting&&<details>
-    <summary>איך מקרינים למסך הסטודיו?</summary>
-    <ol>
-     <li>התחברי לרשת ה־Wi-Fi של הסטודיו.</li>
-     <li>פתחי שיקוף מסך או Cast במכשיר ובחרי במסך הסטודיו.</li>
-     <li>חזרי לאימון ובחרי ״תצוגת מסך״.</li>
-    </ol>
-   </details>}
-   <span>בכאב או תחושה חריגה מפסיקים מיד.</span>
-  </footer>
+  <footer className="runner-footer"><span>בכאב או תחושה חריגה מפסיקים מיד.</span></footer>
  </main>
 }
