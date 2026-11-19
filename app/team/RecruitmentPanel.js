@@ -166,10 +166,10 @@ export default function RecruitmentPanel({pin,sessions,onAssigned,users=[],initi
             const reader=new FileReader();reader.onload=()=>setImage({mime:file.type,base64:String(reader.result).split(",")[1]});reader.onerror=()=>setMessage("לא ניתן לקרוא תמונה");reader.readAsDataURL(file);
           }}/><span className="small">אפשר להעלות תמונת BISS שיש לכם רשות להשתמש בה. ללא תמונה תופיע תמונת המותג.</span></label>
           <label className="field">יעדי השיתוף לאישור (קבוצות WhatsApp / Facebook וכדומה)<textarea name="destinations" maxLength={1000} placeholder="למשל: קבוצת מדריכות האזור"/></label>
-          {!!eligible.length&&<fieldset><legend>פנייה למדריכות רשומות</legend>
+          {!!eligible.length&&<fieldset><legend>פנייה למדריכות רשומות</legend><p className="small">בדקו שם, מייל ומספר לפני בחירה. כשיש כמה חשבונות של אותה מדריכה, בחרו בחשבון הרצוי בלבד.</p>
             <button type="button" className="btn" onClick={()=>setRecipients(eligible.map(person=>person.id))}>בחירת כל המדריכות הפעילות</button>
             <button type="button" className="btn" onClick={()=>setRecipients([])}>ניקוי בחירה</button>
-            {eligible.map(person=><label className="permission-check" key={person.id}><input type="checkbox" checked={recipients.includes(person.id)} onChange={e=>setRecipients(ids=>e.target.checked?[...ids,person.id]:ids.filter(id=>id!==person.id))}/>{person.full_name}</label>)}
+            {eligible.map(person=><label className="permission-check" key={person.id}><input type="checkbox" checked={recipients.includes(person.id)} onChange={e=>setRecipients(ids=>e.target.checked?[...ids,person.id]:ids.filter(id=>id!==person.id))}/><span><strong>{person.full_name}</strong><span className="small" style={{display:"block"}}><bdi>{person.phone||"חסר טלפון"}</bdi> · <bdi>{person.email||"חסר מייל"}</bdi></span></span></label>)}
           </fieldset>}
           <label className="permission-check"><input type="checkbox" name="showWorkout"/> הצגת תרגילים ופלייליסט בקישור</label>
           <p className="small">הכותרת, הכתובת, הדרישות וההערות יופיעו בקישור. השאירי פרטים אישיים ומידע רפואי מחוץ לפרסום.</p>
@@ -205,7 +205,7 @@ export default function RecruitmentPanel({pin,sessions,onAssigned,users=[],initi
             <button className="btn" disabled={busy} onClick={()=>run(async()=>{await request("",{action:"close",id:post.id});await load(post.id);await list();})}>סגירת הפרסום</button>
           </div>
         </>}
-        {post.status==="open"&&eligible.filter(person=>post.terms.recipientIds?.includes(person.id)).map(person=><div className="card" key={person.id}><strong>{person.full_name}</strong><div className="row">
+        {post.status==="open"&&eligible.filter(person=>post.terms.recipientIds?.includes(person.id)).map(person=><div className="card" key={person.id}><strong>{person.full_name}</strong><p className="small">מספר יעד: <bdi>{person.phone||"חסר טלפון"}</bdi> · <bdi>{person.email||"חסר מייל"}</bdi></p><div className="row">
           {whatsappNumber(person.phone)&&<a className="btn green" target="_blank" rel="noreferrer" href={`https://wa.me/${whatsappNumber(person.phone)}?text=${encodeURIComponent(recruitmentAd(post.terms,link))}`}>שליחה אישית ב־WhatsApp</a>}
           {person.email&&<a className="btn" href={`mailto:${encodeURIComponent(person.email)}?subject=${encodeURIComponent(post.terms.title+" · BISS Studio")}&body=${encodeURIComponent(recruitmentAd(post.terms,link))}`}>פתיחת מייל בתוכנת הדואר</a>}
         </div></div>)}
