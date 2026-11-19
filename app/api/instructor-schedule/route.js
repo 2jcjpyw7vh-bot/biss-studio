@@ -5,6 +5,7 @@ import {readArboxSchedule} from "../../../lib/arbox-config";
 import {upcomingArboxLessons,personalLessonFrame} from "../../../lib/instructor-schedule";
 import {studioLocalTimeToIso} from "../../../lib/studio-time";
 import {publicWorkoutShare} from "../../../lib/public-workout-share";
+import {workoutTaskFrame} from "../../../lib/workout-task";
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 async function access(req){
   const db=supabaseAdmin();if(!db)return {response:reply({error:"שירות Studio אינו זמין."},503)};
@@ -51,7 +52,17 @@ export async function POST(req){
   if(rows.some(row=>!row.frame))return reply({error:"בחלק מהשיעורים חסרים משך או כמות משתתפות מתאימים. בקשי מהמנהלת להגדיר משימת בנייה לשיעורים האלה."},409);
   const saved=rows.length?await db.from("biss_sessions").select("arbox_session_id,workout_payload").eq("instructor_id",profile.id).in("arbox_session_id",rows.map(row=>row.arbox_schedule_id)).eq("status","planned"):{data:[]};
   if(saved.error)return reply({error:"לא ניתן לבדוק אימונים קיימים. לא נוצרה משימה חדשה."},503);
-  for(const row of rows){const candidates=saved.data.filter(session=>session.arbox_session_id===row.arbox_schedule_id&&publicWorkoutShare(session.workout_payload));if(candidates.length>1)return reply({error:"נמצאו כמה אימונים לאותו שיעור. נדרשת בדיקת מנהלת."},409);const source=candidates[0]?.workout_payload;if(source){const workout=publicWorkoutShare(source);if(workout.durationMinutes!==row.frame.duration)return reply({error:"האימון השמור אינו תואם למשך השיעור בארבוקס. נדרשת בדיקת מנהלת."},409);row.frame={...row.frame,type:workout.type||row.frame.type,limitations:Array.isArray(source.limitations)?source.limitations:[]};row.workout=workout;row.submitted_at=new Date().toISOString();}}
+  for(const row of rows){
+    const candidates=saved.data.filter(session=>session.arbox_session_id===row.arbox_schedule_id&&publicWorkoutShare(session.workout_payload));
+    if(candidates.length>1)return reply({error:"נמצאו כמה אימונים לאותו שיעור. נדרשת בדיקת מנהלת."},409);
+    const source=candidates[0]?.workout_payload;
+    if(source){
+      const workout=publicWorkoutShare(source);
+      const frame=workoutTaskFrame({...row.frame,type:workout.type||row.frame.type,limitations:Array.isArray(source.limitations)?source.limitations:[]});
+      if(workout.durationMinutes!==row.frame.duration||!frame)return reply({error:"מסגרת האימון השמור אינה תואמת לשיעור בארבוקס. נדרשת בדיקת מנהלת."},409);
+      row.frame=frame;row.workout=workout;row.submitted_at=new Date().toISOString();
+    }
+  }
   if(rows.length){const saved=await db.from("biss_workout_tasks").upsert(rows,{onConflict:"arbox_schedule_id,instructor_id",ignoreDuplicates:true});if(saved.error)return reply({error:"לא ניתן לשמור את משימות הבנייה."},503);}
   const tasks=await db.from("biss_workout_tasks").select("id,arbox_schedule_id,submitted_at").eq("instructor_id",profile.id).in("arbox_schedule_id",body.scheduleIds);
   return tasks.error?reply({error:"המשימות נשמרו אך טעינתן נכשלה. אפשר לרענן."},503):reply({tasks:tasks.data});
