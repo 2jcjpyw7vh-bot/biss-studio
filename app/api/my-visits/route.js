@@ -6,7 +6,7 @@ import {isRecruitmentId} from "../../../lib/recruitment";
 import {visitOwnerId,visitPreferenceResult} from "../../../lib/studio-visits";
 export const dynamic="force-dynamic";
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
-const fields="id,title,service_kind,starts_at,ends_at,status,party_size,included_items,address,instructions,equipment_notes,preferences,revision";
+const fields="id,title,service_kind,activities,starts_at,ends_at,status,party_size,included_items,address,instructions,equipment_notes,preferences,revision";
 async function access(req){const db=supabaseAdmin();if(!db)return {response:reply({error:"שירות Studio אינו זמין"},503)};const a=await studioProfileFromRequest(req,db);return a.error?{response:reply({error:a.error},a.status)}:{db,profile:a.profile};}
 export async function GET(req){
  const {db,profile,response}=await access(req);if(response)return response;

@@ -33,7 +33,7 @@ export async function POST(req){
   return result.error?reply({error:"הביטול לא נשמר"},503):result.data?reply({saved:true}):reply({error:"הביקור השתנה. יש לרענן."},409);
  }
  if(body?.action!=="create"||body.confirmed!==true||!isRecruitmentId(body.id)||!isRecruitmentId(body.customerId))return reply({error:"יש לבחור לקוח ולאשר בדיקת הזמנה ותשלום בארבוקס"},400);
- const row={id:body.id,customer_id:body.customerId,arbox_booking_id:clean(body.arboxBookingId,120),title:clean(body.title,180),service_kind:body.kind,
+ const row={id:body.id,customer_id:body.customerId,arbox_booking_id:clean(body.arboxBookingId,120),title:clean(body.title,180),service_kind:body.kind,activities:body.kind==="mixed"?(body.mixedActivities==="both"?["workout","dj","leisure"]:body.mixedActivities==="dj"?["dj","leisure"]:["workout","leisure"]):[body.kind],
   starts_at:studioLocalTimeToIso(body.startsAt),ends_at:studioLocalTimeToIso(body.endsAt),party_size:Number(body.partySize),
   included_items:typeof body.included==="string"?body.included.split(/\r?\n/).map(value=>value.trim().slice(0,180)).filter(Boolean).slice(0,20):[],
   address:clean(body.address,220)||visitAddress,instructions:clean(body.instructions,3000),equipment_notes:clean(body.equipmentNotes,2000)};

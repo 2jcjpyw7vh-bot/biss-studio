@@ -11,6 +11,9 @@ test('visits support short, long and mixed uses while keeping a bounded booking 
  assert.match(visitFrameError({...visit,ends_at:'2026-11-21T09:00:00Z'},now),/משך/);
  assert.match(visitFrameError({...visit,party_size:0},now),/מבקרים/);
  assert.match(visitFrameError({...visit,included_items:[]},now),/כלול/);
+ assert.equal(visitHasDJ({...visit,service_kind:"mixed",activities:["workout","leisure"]}),false);
+ assert.equal(visitHasWorkout({...visit,service_kind:"mixed",activities:["dj","leisure"]}),false);
+ assert.equal(visitHasDJ({...visit,service_kind:"mixed",activities:["workout","dj","leisure"]}),true);
  assert.equal(visitHasDJ(visit),true);assert.equal(visitHasWorkout(visit),false);
 });
 test('customer preferences cannot mutate times, payment, owner or equipment eligibility',()=>{
