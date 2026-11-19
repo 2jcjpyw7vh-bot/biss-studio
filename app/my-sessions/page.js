@@ -30,7 +30,7 @@ export default function MySessionsPage(){
   const ready=data?.ownerId===user?.id?data:null;
 
   useEffect(()=>{
-    if(user?.role==="trainee"){window.location.replace("/my-program");return;}
+    if(user?.role==="trainee"){window.location.replace("/my-visits");return;}
     if(!user)return;
     const controller=new AbortController();
     setMessage("");
@@ -67,6 +67,7 @@ export default function MySessionsPage(){
       <a href="#arbox-personal-schedule">השיעורים שלי בארבוקס</a>
     </nav>
     {user.role==="manager"&&<section className="personal-management" aria-labelledby="management-title"><h2 id="management-title">ניהול הסטודיו</h2><div className="personal-tools">
+      <Link href="/visits" className="personal-tool"><strong>ביקורים וחוויות</strong><span>לקוחות, אימון עצמאי, DJ וביקורים משולבים</span></Link>
       {management.map(([tab,title,description])=><Link href={`/?tab=${tab}`} className="personal-tool" key={tab}><strong>{title}</strong><span>{description}</span></Link>)}
     </div></section>}
     {message&&<section className="panel notice" role="status">{message} <button className="btn" onClick={()=>retry(value=>value+1)}>ניסיון חוזר</button></section>}

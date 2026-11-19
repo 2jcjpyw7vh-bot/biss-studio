@@ -6,7 +6,7 @@ import {supabaseBrowser} from "../../lib/supabase-browser";
 import {loginDestination, loginTarget} from "../../lib/studio-login";
 import {personalArea} from "../../lib/studio-navigation";
 
-const roleLabels={manager:"מנהלת",instructor:"מדריכה",trainee:"מתאמנת"};
+const roleLabels={manager:"מנהלת",instructor:"מדריכה",trainee:"לקוח/ה"};
 
 async function studioProfile(session) {
   const response = await fetch("/api/me", {
@@ -178,7 +178,7 @@ export default function LoginPage() {
       </form>}
     </>}
     {profile && <div className="safe"><strong>שלום {profile.full_name}</strong><p>תפקיד: {roleLabels[profile.role] || profile.role}</p>
-      {profile.role === "trainee" ? <Link className="btn primary" href="/my-program">התוכנית שלי</Link> : <Link className="btn primary" href="/my-sessions">האימונים שלי</Link>}
+      {profile.role === "trainee" ? <Link className="btn primary" href="/my-visits">הביקורים שלי</Link> : <Link className="btn primary" href="/my-sessions">האימונים שלי</Link>}
     </div>}
     {blocked && !checking && <button className="btn" disabled={busy} onClick={signOut}>יציאה והחלפת חשבון</button>}
     {profile?.role === "manager" && <form className="pin-reset-card" onSubmit={resetPin}>

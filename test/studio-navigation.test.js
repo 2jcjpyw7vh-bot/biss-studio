@@ -5,7 +5,7 @@ import {personalArea,workspaceSection,publicStudioPath} from "../lib/studio-navi
 test("personal navigation preserves role boundaries and known workspace destinations",()=>{
   assert.equal(personalArea("manager"),"/my-sessions");
   assert.equal(personalArea("instructor"),"/my-sessions");
-  assert.equal(personalArea("trainee"),"/my-program");
+  assert.equal(personalArea("trainee"),"/my-visits");
   assert.equal(personalArea(undefined),"/login");
   for(const section of ["team","continuity","program","homework","equipment","integrations"]){assert.equal(workspaceSection(section),section);}
   assert.equal(workspaceSection("https://example.com"),"");
