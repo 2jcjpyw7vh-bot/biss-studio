@@ -35,3 +35,6 @@
 - `docs/APPROVED_ROADMAP.txt` — מפת הדרכים שאושרה ב־19.11.2026, לפירוק אופרטיבי ביום ראשון 22.11.2026.
 
 - `reports/QA-2026-11-19.md` — בדיקות כניסה, דואר, אנשי קשר ובקשות בנייה, עם פירוט מה שנותר לאימות.
+
+- `reports/Recruitment-Review-2026-11-19.md` — טיוטת גיוס לאישור, מועמדויות, ביטוח/הסמכות, בדיקות חיות ומגבלות החיבור לרשתות.
+- `reports/recruitment-work/applied-schema.sql` — SQL שהוחל בפרויקט Studio בלבד; הגירת `studio_recruitment_documents_and_review`.
