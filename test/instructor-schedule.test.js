@@ -6,7 +6,7 @@ test("personal calendar uses the assigned server-side staff ID and excludes regi
   const result=await readArboxSchedule({ARBOX_API_KEY:"test"},async url=>{
     const q=new URL(url).searchParams;
     assert.equal(q.get("staff_id"),"123");assert.equal(q.get("limit"),"500");assert.equal(q.get("registration_details"),"0");assert.equal(q.get("to_date"),"2026-12-16");
-    return Response.json({data:[{schedule_id:"a",date:"2026-11-22",start_time:"09:00",staff_member:"Coach",second_staff_member:"Assistant",registration_details:[{name:"must not escape"}]}]});
+    return Response.json({data:[{schedule_id:"a",date:"2026-11-22",start_time:"09:00",staff_member:{name:"Coach",user_id:123,email:"must not escape",phone:"must not escape"},second_staff_member:"Assistant",registration_details:[{name:"must not escape"}]}]});
   },new Date("2026-11-19T10:00:00Z"),{staffId:"123",days:28});
   assert.equal(result.lessons[0].instructorName,"Coach");assert.equal(result.lessons[0].secondInstructorName,"Assistant");assert.equal(JSON.stringify(result).includes("must not escape"),false);
   assert.deepEqual(await readArboxSchedule({ARBOX_API_KEY:"test"},()=>assert.fail("invalid staff must not query"),new Date(),{staffId:"123&other=1"}),{error:"invalid_staff"});
