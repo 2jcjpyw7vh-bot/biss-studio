@@ -51,8 +51,8 @@ test("Arbox weekly preview requests aggregate registrations and excludes persona
  assert.deepEqual(result,{
   from:"2026-11-11",to:"2026-11-17",limited:false,skipped:2,
   lessons:[
-   {scheduleId:"",date:"2026-11-11",start:"08:00",end:"",name:"Pilates",location:"",capacity:null,registrations:null,cancelled:false},
-   {scheduleId:"123",date:"2026-11-12",start:"18:00",end:"18:50",name:"Barre",location:"Studio",capacity:7,registrations:0,cancelled:true},
+   {scheduleId:"",date:"2026-11-11",start:"08:00",end:"",name:"Pilates",location:"",instructorName:"",secondInstructorName:"",capacity:null,registrations:null,cancelled:false},
+   {scheduleId:"123",date:"2026-11-12",start:"18:00",end:"18:50",name:"Barre",location:"Studio",instructorName:"private",secondInstructorName:"",capacity:7,registrations:0,cancelled:true},
   ]
  });
 });
