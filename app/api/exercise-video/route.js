@@ -1,8 +1,18 @@
 import {supabaseAdmin} from "../../../lib/supabase";
+import exercisesSeed from "../../../data/exercises.json";
+import {selectExerciseVideo} from "../../../lib/exercise-video";
 export async function GET(request) {
   const {searchParams}=new URL(request.url);
-  const exercise=searchParams.get("exercise");
+  let exercise=searchParams.get("exercise");
   const exerciseId=searchParams.get("id");
+  const db=supabaseAdmin();
+  if(exerciseId){
+    const result=db?await db.from("exercises").select("en").eq("exercise_id",exerciseId).eq("active",true).maybeSingle():null;
+    if(result?.error)return Response.json({error:"Exercise lookup failed"},{status:503});
+    const stored=result?.data||exercisesSeed.find(item=>item.id===exerciseId);
+    if(!stored)return Response.json({error:"Exercise not found"},{status:404});
+    exercise=stored.en;
+  }
   if(!exercise)return Response.json({error:"Missing exercise"},{status:400});
   const apiKey=process.env.YOUTUBE_API_KEY;
   if(!apiKey)return Response.json({error:"Missing YouTube API key"},{status:500});
@@ -12,14 +22,10 @@ export async function GET(request) {
     const response=await fetch(url,{next:{revalidate:86400}});
     const data=await response.json();
     if(!response.ok)return Response.json({error:"YouTube search failed"},{status:response.status});
-    const preferred=data.items?.find(item=>{
-      const title=(item.snippet?.title||"").toLowerCase();
-      return ["how to","proper form","tutorial","technique"].some(k=>title.includes(k));
-    })||data.items?.[0];
+    const preferred=selectExerciseVideo(data.items,exercise);
     const videoId=preferred?.id?.videoId;
     const videoUrl=videoId?`https://www.youtube.com/embed/${videoId}`:"";
     if(videoUrl&&exerciseId){
-      const db=supabaseAdmin();
       if(db)await db.from("exercises").update({video_url:videoUrl}).eq("exercise_id",exerciseId);
     }
     return Response.json({videoUrl});
