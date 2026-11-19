@@ -4,6 +4,7 @@ import {useEffect,useState} from "react";
 import {supabaseBrowser} from "../../lib/supabase-browser";
 import {useStudioSession} from "../StudioSession";
 import {visitDay,visitTime,visitPhase,visitHasWorkout,visitHasDJ} from "../../lib/studio-visits";
+import FarmShopCard from "./FarmShopCard";
 import StudioSocialLinks from "../StudioSocialLinks";
 function VisitCard({visit,preview,onSaved,now}){
  const [message,setMessage]=useState(""),[busy,setBusy]=useState(false);
@@ -45,7 +46,7 @@ export default function MyVisits(){
  return <main className="shell visit-workspace"><section className="personal-welcome"><div><div className="eyebrow">BISS · המקום והזמן שלך</div><h1>{ready?`שלום, ${ready.profile.full_name}`:"האזור האישי שלך"}</h1><p className="sub">הביקורים, המוזיקה וכל מה שהזמנת — במקום אחד.</p></div>{user&&<button className="btn" disabled={loading} onClick={()=>retry(n=>n+1)}>רענון ההזמנות</button>}</section>
   {!user&&<section className="panel"><p>{status==="loading"?"בודק כניסה…":"היכנסו כדי לראות את ההזמנות האישיות שלכם."}</p>{status!=="loading"&&<Link className="btn primary" href="/login?next=my-visits">כניסה לאזור האישי</Link>}</section>}
   {loading&&<p role="status">טוען את הביקורים שלך…</p>}{message&&<section className="panel notice" role="status">{message}</section>}
-  {ready&&<>{ready.preview&&<div className="notice">תצוגה מקדימה של מנהל · <Link href="/visits">חזרה לניהול הביקורים</Link></div>}<nav className="visit-navigation" aria-label="הביקורים שלי"><button className={`btn ${!history?"primary":""}`} aria-pressed={!history} onClick={()=>setHistory(false)}>הביקורים הקרובים</button><button className={`btn ${history?"primary":""}`} aria-pressed={history} onClick={()=>setHistory(true)}>הביקורים הקודמים</button>{!ready.preview&&ready.visits.some(visitHasWorkout)&&<Link className="btn" href="/my-program">תוכניות האימון שלי</Link>}</nav>
+  {ready&&<><FarmShopCard url={ready.shopUrl}/>{ready.preview&&<div className="notice">תצוגה מקדימה של מנהל · <Link href="/visits">חזרה לניהול הביקורים</Link></div>}<nav className="visit-navigation" aria-label="הביקורים שלי"><button className={`btn ${!history?"primary":""}`} aria-pressed={!history} onClick={()=>setHistory(false)}>הביקורים הקרובים</button><button className={`btn ${history?"primary":""}`} aria-pressed={history} onClick={()=>setHistory(true)}>הביקורים הקודמים</button>{!ready.preview&&ready.visits.some(visitHasWorkout)&&<Link className="btn" href="/my-program">תוכניות האימון שלי</Link>}</nav>
    {!visits.length&&<section className="panel visit-empty"><h2>{history?"עוד אין ביקורים קודמים":"אין כרגע ביקור קרוב באזור האישי"}</h2><p>אם כבר הזמנתם בארבוקס והביקור עדיין אינו מופיע, פנו לצוות כדי לבדוק את שיוך ההזמנה לחשבון.</p></section>}
    {visits.map(visit=><VisitCard key={visit.id} visit={visit} preview={ready.preview} now={now} onSaved={updated=>setData(current=>({...current,visits:current.visits.map(row=>row.id===updated.id?updated:row)}))}/>)}</>}
   <StudioSocialLinks/>

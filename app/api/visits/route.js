@@ -1,3 +1,4 @@
+import {farmShopUrl} from "../../../lib/farm-shop";
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {studioProfileFromRequest} from "../../../lib/studio-auth";
@@ -14,11 +15,18 @@ export async function GET(req){
   db.from("biss_visits").select("*").order("starts_at",{ascending:false}).limit(100),
   db.from("biss_users").select("id,full_name,email,phone").eq("role","trainee").eq("status","active").order("full_name")]);
  if(visits.error||customers.error)return reply({error:"לא ניתן לטעון ביקורים ולקוחות"},503);
- return reply({visits:visits.data,customers:customers.data});
+ const shop=await db.from("biss_admin_settings").select("setting_value").eq("setting_key","farm_shop_url").maybeSingle();
+ return reply({visits:visits.data,customers:customers.data,shopUrl:shop.error?"":farmShopUrl(shop.data?.setting_value)});
 }
 export async function POST(req){
  const {db,profile,response}=await access(req);if(response)return response;
  const body=await req.json().catch(()=>null);
+ if(body?.action==="shop_settings"){
+  const url=farmShopUrl(body.url);
+  if(!url)return reply({error:"יש להזין קישור HTTPS ציבורי לחנות בארבוקס, ולא כתובת של מסך הניהול."},400);
+  const saved=await db.from("biss_admin_settings").upsert({setting_key:"farm_shop_url",setting_value:url,updated_at:new Date().toISOString(),updated_by:profile.id},{onConflict:"setting_key"});
+  return saved.error?reply({error:"קישור החנות לא נשמר"},503):reply({saved:true});
+ }
  if(body?.action==="cancel"){
   if(!isRecruitmentId(body.id)||!Number.isInteger(body.revision))return reply({error:"פרטי ביקור אינם תקינים"},400);
   const result=await db.from("biss_visits").update({status:"cancelled",revision:body.revision+1}).eq("id",body.id).eq("revision",body.revision).eq("status","confirmed").select("id").maybeSingle();

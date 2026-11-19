@@ -1,3 +1,4 @@
+import {farmShopUrl} from "../../../lib/farm-shop";
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {studioProfileFromRequest} from "../../../lib/studio-auth";
@@ -17,7 +18,8 @@ export async function GET(req){
  const person=isPreview?await db.from("biss_users").select("full_name").eq("id",owner).eq("role","trainee").eq("status","active").maybeSingle():{data:profile};
  if(person.error||!person.data)return reply({error:"הלקוח לא נמצא"},404);
  const result=await db.from("biss_visits").select(fields).eq("customer_id",owner).order("starts_at",{ascending:false}).limit(100);
- return result.error?reply({error:"לא ניתן לטעון את הביקורים"},503):reply({profile:{full_name:person.data.full_name},visits:result.data,preview:isPreview});
+ const shop=await db.from("biss_admin_settings").select("setting_value").eq("setting_key","farm_shop_url").maybeSingle();
+ return result.error?reply({error:"לא ניתן לטעון את הביקורים"},503):reply({profile:{full_name:person.data.full_name},visits:result.data,preview:isPreview,shopUrl:shop.error?"":farmShopUrl(shop.data?.setting_value)});
 }
 export async function POST(req){
  const {db,profile,response}=await access(req);if(response)return response;
