@@ -17,6 +17,7 @@ test("document policy enforces files, real expiry dates, Israel lesson date and 
 
 test("ad includes pay, travel, recurrence and conditions without applicant or original instructor data",()=>{
   const ad=recruitmentAd({title:"פילאטיס",recurring:"ימי ראשון",slots:[{title:"פילאטיס",startsAt:"2026-11-22T07:15:00Z",pay:15000,originalInstructorName:"private"}],travelSingle:3000,travelMultiple:5000,address:"כתובת בדיקה",requireInsurance:true,requireCertificate:true},"https://biss-studio.vercel.app/recruit/demo");
+  assert.ok(ad.indexOf("https://biss-studio.vercel.app/recruit/demo")<ad.indexOf("https://www.instagram.com/"));
   assert.match(ad,/ימי ראשון/);assert.match(ad,/150/);assert.match(ad,/ביטוח/);assert.match(ad,/תעודת/);assert.doesNotMatch(ad,/private/);
 });
 
