@@ -1,4 +1,5 @@
 "use client";
+import {studioAdminHeaders} from "../../lib/studio-admin-client";
 import {useEffect,useState} from "react";
 import ProgramSessionDetails from "./ProgramSessionDetails";
 
@@ -16,7 +17,7 @@ function SavedProgramDetails({traineeId,programId,pin}) {
     async function load() {
       const params=new URLSearchParams({trainee_id:traineeId,program_id:programId});
       const response=await fetch(`/api/programs?${params}`,{
-        headers:{"x-admin-pin":pin},cache:"no-store",signal:controller.signal
+        headers:await studioAdminHeaders(pin),cache:"no-store",signal:controller.signal
       });
       const result=await response.json();
       if(!response.ok)throw new Error(result.error || "לא ניתן לפתוח את התוכנית.");
@@ -53,7 +54,7 @@ export default function ProgramAssignmentHistory({traineeId,pin,coaches,revision
     setError("");
     async function load() {
       const response=await fetch(`/api/programs?trainee_id=${encodeURIComponent(traineeId)}`,{
-        headers:{"x-admin-pin":pin},cache:"no-store",signal:controller.signal
+        headers:await studioAdminHeaders(pin),cache:"no-store",signal:controller.signal
       });
       const result=await response.json();
       if(!response.ok)throw new Error(result.error || "לא ניתן לטעון שיוכים.");

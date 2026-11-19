@@ -39,3 +39,26 @@ test("inactive Studio user remains blocked",async()=>{
  assert.equal(db.wasActivated(),false);
  assert.equal(result.status,403);
 });
+
+function queuedProfileDb(rows){
+ return {
+  auth:{getUser:async()=>({data:{user:{id:"auth-user",email:"manager@example.com"}},error:null})},
+  from:()=>({select(){return this},eq(){return this},is(){return this},update(){return this},async maybeSingle(){return {data:rows.shift(),error:null}}})
+ };
+}
+
+test("concurrent first-login requests may find the same verified account through email",async()=>{
+ const profile={id:"profile-1",role:"manager",status:"active",auth_user_id:"auth-user"};
+ const result=await studioProfileFromRequest(request,queuedProfileDb([null,profile]));
+ assert.equal(result.status,200);
+ assert.equal(result.profile.id,profile.id);
+});
+
+test("a first-login request recovers when another request links or activates the account",async()=>{
+ const invited={id:"profile-1",role:"manager",status:"invited",auth_user_id:null};
+ const linked={...invited,auth_user_id:"auth-user"};
+ const active={...linked,status:"active"};
+ const result=await studioProfileFromRequest(request,queuedProfileDb([null,invited,null,linked,null,active]));
+ assert.equal(result.status,200);
+ assert.equal(result.profile.status,"active");
+});

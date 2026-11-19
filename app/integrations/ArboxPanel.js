@@ -1,4 +1,6 @@
 "use client";
+import {useStudioSession} from "../StudioSession";
+import {studioAdminHeaders} from "../../lib/studio-admin-client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "../../lib/supabase-browser";
@@ -22,6 +24,8 @@ function connectionStatus(result) {
 }
 
 export default function ArboxPanel() {
+  const {user}=useStudioSession();
+  const isManager=user?.role==="manager";
   const [pin, setPin] = useState("");
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -40,7 +44,7 @@ export default function ArboxPanel() {
     setData(null);
     try {
       const response = await fetch("/api/integrations/arbox", {
-        headers: { "x-admin-pin": pin },
+        headers: await studioAdminHeaders(pin),
         cache: "no-store",
       });
       const result = await response.json();
@@ -95,15 +99,15 @@ export default function ArboxPanel() {
   return <section className="panel integration-panel">
     <div className="row between">
       <div>
-        <h2>חיבור Arbox</h2>
-        <div className="sub">בדיקת גישה לסניפים וללוח השיעורים דרך API V3.</div>
+        <h2>לוח ארבוקס וחיבור</h2>
+        <div className="sub">שיעורים קרובים ושיוך בקשות לבניית אימון.</div>
       </div>
       <span className="tag blue">קריאה בלבד</span>
     </div>
     <div className="notice">בכניסה אישית של מנהלת אפשר לקרוא את הלוח וליצור ממנו משימת בניית אימון ב־Studio.</div>
     <form className="continuity-login" onSubmit={check}>
-      <label className="field">PIN מנהל<input type="password" value={pin} onChange={e => setPin(e.target.value)} /></label>
-      <button className="btn primary" disabled={!pin || checking}>{checking ? "בודק חיבור…" : "בדיקת חיבור"}</button>
+      {!isManager&&<label className="field">PIN מנהל<input type="password" value={pin} onChange={e => setPin(e.target.value)} /></label>}
+      <button className="btn primary" disabled={(!pin&&!isManager) || checking}>{checking ? "בודק חיבור…" : "בדיקת חיבור"}</button>
     </form>
     <div role="status">
       {error && <div className="notice">{error}</div>}
