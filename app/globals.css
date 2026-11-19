@@ -724,3 +724,8 @@ input,select,textarea{min-height:46px;border-color:#dce4de;background:#fcfdfc}
 .continuity-create>summary{cursor:pointer;font-weight:700;padding:14px 0;color:#285d3d}.personal-workspace .card+.card{margin-top:10px}
 
 .recruitment-ad{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.7;background:#f4f8f5;padding:20px;border-radius:16px;max-width:100%;min-width:0;}
+.substitute-page .panel{grid-template-columns:minmax(0,1fr)}
+.substitute-page .panel>*,.recruitment-panel,.recruitment-panel .field,.recruitment-panel fieldset{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.substitute-page .btn,.recruitment-panel .btn{white-space:normal;overflow-wrap:anywhere;max-width:100%;text-decoration:none;line-height:1.5}
+.substitute-page input[type=file],.recruitment-panel input[type=file]{min-width:0;max-width:100%}
+@media(max-width:640px){.substitute-page .row{align-items:stretch}.substitute-page .row>.btn{width:100%;text-align:center}.recruitment-panel .filters{grid-template-columns:minmax(0,1fr)}.recruitment-panel .row>.btn{width:100%;text-align:center}.recruitment-panel fieldset{padding:12px}}
