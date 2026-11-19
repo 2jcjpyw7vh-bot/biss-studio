@@ -9,16 +9,19 @@ import WorkoutTasksList from "./WorkoutTasksList";
 
 export default function MySessionsPage(){
  const[data,setData]=useState(null),[message,setMessage]=useState("טוען את האימונים שלך…");
+ const [sessionView,setSessionView]=useState("upcoming");
  const client=supabaseBrowser();
- useEffect(()=>{if(!client){setMessage("הכניסה האישית עדיין לא הופעלה בשרת.");return}client.auth.getSession().then(async({data:auth})=>{if(!auth.session){setMessage("יש להיכנס תחילה דרך הקישור במייל.");return}const r=await fetch("/api/my-sessions",{headers:{Authorization:`Bearer ${auth.session.access_token}`},cache:"no-store"}),d=await r.json();if(!r.ok){setMessage(d.error);return}setData(d);setMessage("")})},[client]);
+ useEffect(()=>{if(!client){setMessage("הכניסה האישית עדיין לא הופעלה בשרת.");return}client.auth.getSession().then(async({data:auth})=>{if(!auth.session){setMessage("יש להיכנס תחילה דרך הקישור במייל.");return}const r=await fetch("/api/my-sessions",{headers:{Authorization:`Bearer ${auth.session.access_token}`},cache:"no-store"}),d=await r.json();if(!r.ok){setMessage(d.error);return}setData(d);setMessage("")}).catch(()=>setMessage("לא ניתן לטעון את האזור האישי. אפשר לרענן ולנסות שוב."))},[client]);
+ const visibleSessions=(data?.sessions||[]).filter(session=>sessionView==="all"||(Date.parse(session.starts_at)>=Date.now()&&session.status!=="cancelled"));
  const group=id=>data?.groups.find(x=>x.id===id);
  return <main className="shell instructor-shell"><div className="row between"><div><div className="eyebrow">BISS STUDIO · אזור מדריכה</div><h1>האימונים שלי</h1></div><Link className="btn" href="/">חזרה למערכת</Link></div>
+  {data&&<section className="panel"><strong>שלום {data.profile.full_name}</strong><div className="small">{data.profile.role==="manager"?"חשבון מנהלת · משימות הצוות זמינות כאן":"חשבון מדריכה · המשימות והשיבוצים שלך"}</div><Link className="btn" href="/login?switch=1&next=my-sessions">החלפת חשבון</Link></section>}
   {message&&<section className="panel notice">{message} {message.includes("להיכנס")&&<Link href="/login?next=my-sessions">מעבר לכניסה</Link>}</section>}
   {data&&<WorkoutTasksList/>}
   <SavedWorkoutLibrary client={client}/>
-  {data&&<><section className="panel"><h2>אימונים מתוכננים</h2><div className="sub">השיבוצים והמידע הנדרש להכנה, לפי ההרשאות שלך.</div></section>
-   {data.sessions.length===0?<section className="panel"><div className="sub">אין כרגע אימונים משויכים אלייך.</div></section>:data.sessions.map(session=>{const g=group(session.group_id),notes=data.handoffs.filter(x=>x.session_id===session.id),limits=data.adaptations.filter(x=>x.group_id===session.group_id);return <article className="panel instructor-session" key={session.id}>
-    <div className="row between"><div><h2>{g?.name||"קבוצה"} · {session.title}</h2><div className="sub">{new Date(session.starts_at).toLocaleString("he-IL")} · {g?.level||"רמה מעורבת"}</div></div><span className="tag green">{session.status}</span></div>
+  {data&&<><section className="panel"><h2>השיבוצים שלי</h2><label className="field">הצגת שיבוצים<select value={sessionView} onChange={event=>setSessionView(event.target.value)}><option value="upcoming">האימונים הקרובים</option><option value="all">גם אימונים מהשבועיים האחרונים</option></select></label></section>
+   {visibleSessions.length===0?<section className="panel"><div className="sub">אין כרגע אימונים משויכים אלייך.</div></section>:visibleSessions.map(session=>{const g=group(session.group_id),notes=data.handoffs.filter(x=>x.session_id===session.id),limits=data.adaptations.filter(x=>x.group_id===session.group_id);return <article className="panel instructor-session" key={session.id}>
+    <div className="row between"><div><h2>{g?.name||"קבוצה"} · {session.title}</h2><div className="sub">{new Date(session.starts_at).toLocaleString("he-IL")} · {g?.level||"רמה מעורבת"}</div></div><span className="tag green">{({planned:"מתוכנן",completed:"הסתיים",cancelled:"בוטל"})[session.status]||session.status}</span></div>
     {session.workout_summary?<div className="safe"><strong>תוכנית האימון</strong><p style={{whiteSpace:"pre-line"}}>{session.workout_summary}</p></div>:<div className="notice">תוכנית האימון עדיין לא נשמרה.</div>}
     <BoneDemoLinks demos={boneDemos(session.workout_payload)}/>
     {(session.playlist_url||g?.playlist_url)&&<a className="btn" href={session.playlist_url||g.playlist_url} target="_blank" rel="noreferrer">פתיחת הפלייליסט</a>}
