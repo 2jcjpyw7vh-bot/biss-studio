@@ -24,15 +24,15 @@ export default function StaffAccessShare({userId,taskId,name,token}) {
       const result=await response.json();
       if(!response.ok){setLogin(response.status===401);throw Error(result.error);}
       setWhatsapp(result.whatsapp||"");
-      setMessage(result.message||`ההודעה האישית עבור ${result.recipient} מוכנה. פתחי וואטסאפ ושלחי אותה בשיחה.`);
+      setMessage(result.message||`ההודעה עבור ${result.recipient} מוכנה. וואטסאפ נפתח עם ההודעה; שם יש ללחוץ על שליחה.`);
+      if(channel==="whatsapp"&&result.whatsapp)window.location.assign(result.whatsapp);
     }catch(error){setMessage(error.message||"לא ניתן להכין את ההודעה.");}
     finally{setBusy(false);}
   }
 
-  return <div>
-    <button className="btn green" type="button" disabled={busy} onClick={()=>prepare("whatsapp")}>{busy?"מכין כניסה…":`הכנת כניסה אישית בוואטסאפ${name?` ל${name}`:""}`}</button>
+  return <div className="staff-access-share">
+    {whatsapp?<a className="btn green" href={whatsapp}>פתיחת ההודעה בוואטסאפ שוב</a>:<button className="btn green" type="button" disabled={busy} onClick={()=>prepare("whatsapp")}>{busy?"מכין הודעה…":`שליחת כניסה בוואטסאפ${name?` ל${name}`:""}`}</button>}
     <button className="btn" type="button" disabled={busy} onClick={()=>prepare("email")}>שליחת מייל כניסה{taskId?" למשימה":""}</button>
-    {whatsapp&&<a className="btn primary" href={whatsapp} target="_blank" rel="noreferrer">פתיחת וואטסאפ לשליחת הכניסה</a>}
     {message&&<p role="status" className="small">{message}</p>}
     {login&&<Link className="btn" href="/login">כניסת מנהלת</Link>}
   </div>;

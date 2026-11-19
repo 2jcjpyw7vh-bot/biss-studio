@@ -27,7 +27,7 @@ export default function WorkoutTasksList() {
     {error?<div className="notice" role="status">{error} <button className="btn" onClick={()=>retry(value=>value+1)}>ניסיון חוזר</button></div>
       :tasks===null?<p role="status">טוען משימות…</p>
       :visibleTasks.length===0?<p>אין משימות בתצוגה שנבחרה.</p>
-      :visibleTasks.map(task=><article className="card row between" key={task.id}>
+      :visibleTasks.map(task=><article className="card workout-task-card" key={task.id}>
         <div><strong>{task.title}</strong><div className="small">{new Date(task.starts_at).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem"})} · {task.submitted_at?"האימון נשלח":"ממתין לבנייה"}</div></div>
         <Link className="btn" href={`/?buildTask=${task.id}`}>פתיחת המשימה</Link>
         {canManage&&<StaffAccessShare userId={task.instructor_id} taskId={task.id}/>}

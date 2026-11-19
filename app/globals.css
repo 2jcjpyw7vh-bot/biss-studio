@@ -699,6 +699,7 @@ input,select,textarea{min-height:46px;border-color:#dce4de;background:#fcfdfc}
 
 
 /* Personal workspace and persistent account navigation. */
+.staff-access-share{display:flex;flex-wrap:wrap;gap:10px;min-width:0;max-width:100%}.staff-access-share>.btn{display:flex;align-items:center;justify-content:center;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center;text-decoration:none;line-height:1.5}.staff-access-share>p{flex-basis:100%;margin:0}.workout-task-card{display:grid;gap:14px;min-width:0}.workout-task-card>.btn{justify-self:start;text-decoration:none}.workout-task-card+.workout-task-card{margin-top:10px}@media(max-width:640px){.staff-access-share{width:100%;flex-direction:column;align-items:stretch}.staff-access-share>.btn{width:100%}.workout-task-card>.btn{width:100%;text-align:center}}
 .studio-account-bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.97);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
 .studio-account-inner{max-width:1180px;margin:auto;padding:10px 22px;display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:74px}
 .studio-brand{display:flex;align-items:center;gap:10px;flex-shrink:0;color:#143b29;text-decoration:none;font-size:20px;letter-spacing:.02em}
