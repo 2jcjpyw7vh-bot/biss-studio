@@ -119,7 +119,7 @@ export default function RecruitmentPanel({pin,sessions,onAssigned,users=[],initi
   const post=detail?.post;
   const taken=new Set(detail?.applications.flatMap(person=>person.approved_ids));
   const link=post?new URL(`/recruit/${post.token}`,window.location.origin).href:"";
-  return <section className="card">
+  return <section className="card recruitment-panel">
     <div className="row between">
       <h3>גיוס מדריכה והחלפות</h3>
       <button className="btn" disabled={busy} onClick={()=>{setOpen(!open);if(!open)run(list);}}>{open?"סגירה":"פתיחת גיוס"}</button>
@@ -130,7 +130,7 @@ export default function RecruitmentPanel({pin,sessions,onAssigned,users=[],initi
         <summary>הכנת מודעה או פנייה למדריכות</summary>
         {sessions.length===0?<p>תחילה יש לתכנן אימון עתידי במסך ההחלפה.</p>:<form className="save-workout-panel" onSubmit={publish}>
           <div className="filters">
-            <label className="field">כותרת וסוג האימון<input name="title" required maxLength={120}/></label>
+            <label className="field">כותרת וסוג האימון<input name="title" defaultValue={sessions.find(session=>session.id===initialSessionId)?.title||""} required maxLength={120}/></label>
             <label className="field">כתובת מלאה לניווט<input name="address" required maxLength={220}/></label>
             <label className="field">תשלום ברירת מחדל לאימון (₪)<input name="defaultPay" {...money} required/></label>
             <label className="field">נסיעות להגעה לאימון אחד (₪)<input name="travelSingle" {...money} required/></label>
@@ -199,13 +199,14 @@ export default function RecruitmentPanel({pin,sessions,onAssigned,users=[],initi
             <a className="btn" href={link} target="_blank" rel="noreferrer">פתיחת הקישור</a>
             <a className="btn green" href={`https://wa.me/?text=${encodeURIComponent(recruitmentAd(post.terms,link))}`} target="_blank" rel="noreferrer">שיתוף ב־WhatsApp</a>
             <button className="btn" type="button" onClick={async()=>{try{await navigator.clipboard.writeText(recruitmentAd(post.terms,link));setMessage("ההודעה הועתקה.");}catch{setMessage("לא ניתן להעתיק את ההודעה.");}}}>העתקת הודעה</button>
+            <a className="btn" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`} target="_blank" rel="noreferrer">פתיחת שיתוף ב־Facebook</a>
             <button className="btn" type="button" onClick={async()=>{try{await navigator.clipboard.writeText(link);setMessage("הקישור הועתק.");}catch{setMessage("אפשר להעתיק את הקישור מהשדה.");}}}>העתקת קישור</button>
             <button className="btn" disabled={busy} onClick={()=>run(async()=>{await request("",{action:"close",id:post.id});await load(post.id);await list();})}>סגירת הפרסום</button>
           </div>
         </>}
         {post.status==="open"&&eligible.filter(person=>post.terms.recipientIds?.includes(person.id)).map(person=><div className="card" key={person.id}><strong>{person.full_name}</strong><div className="row">
           {person.phone&&<a className="btn green" target="_blank" rel="noreferrer" href={`https://wa.me/${person.phone.replace(/\D/g,"").replace(/^0/,"972")}?text=${encodeURIComponent(recruitmentAd(post.terms,link))}`}>שליחה אישית ב־WhatsApp</a>}
-          {person.email&&<a className="btn" href={`mailto:${encodeURIComponent(person.email)}?subject=${encodeURIComponent(post.terms.title+" · BISS Studio")}&body=${encodeURIComponent(recruitmentAd(post.terms,link))}`}>פתיחת מייל אישי לשליחה</a>}
+          {person.email&&<a className="btn" href={`mailto:${encodeURIComponent(person.email)}?subject=${encodeURIComponent(post.terms.title+" · BISS Studio")}&body=${encodeURIComponent(recruitmentAd(post.terms,link))}`}>פתיחת מייל בתוכנת הדואר</a>}
         </div></div>)}
         {post.status!=="open"&&<p>הפרסום סגור להגשת מועמדות.</p>}
         <h3>מועמדויות</h3>
