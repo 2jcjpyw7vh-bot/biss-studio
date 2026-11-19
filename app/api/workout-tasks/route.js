@@ -52,13 +52,16 @@ export async function POST(req) {
     const {data:task,error}=await tasks(db).select(fields).eq("id",body.id).eq("instructor_id",profile.id).maybeSingle();
     if(error)return reply({error:"לא ניתן לבדוק את המשימה."},503);
     if(!task)return reply({error:"משימת הבנייה לא נמצאה בחשבון הזה."},404);
-    if(task.submitted_at)return reply({task});
+    if(task.submitted_at&&!body.expectedSubmittedAt)return reply({task});
+    if(task.submitted_at&&body.expectedSubmittedAt!==task.submitted_at)return reply({error:"האימון השתנה מאז שפתחת אותו. יש לרענן לפני העריכה."},409);
     if(!matchesWorkoutTask(task.frame,body.workout))return reply({error:"האימון צריך להתאים למסגרת שנקבעה למשימה."},400);
     const workout=publicWorkoutShare(body.workout);
     if(!workout||workout.exercises.length>24)return reply({error:"יש לבנות אימון תקין לפני השליחה."},400);
     workout.alternatives=workoutTaskAlternatives(workout.exercises,body.alternatives);
-    const result=await tasks(db).update({workout,submitted_at:new Date().toISOString()})
-      .eq("id",task.id).eq("instructor_id",profile.id).is("submitted_at",null).select(fields).maybeSingle();
+    let update=tasks(db).update({workout,submitted_at:new Date().toISOString()})
+      .eq("id",task.id).eq("instructor_id",profile.id);
+    update=task.submitted_at?update.eq("submitted_at",task.submitted_at):update.is("submitted_at",null);
+    const result=await update.select(fields).maybeSingle();
     if(result.error)return reply({error:"לא ניתן לשמור את האימון. אפשר לנסות שוב."},503);
     if(!result.data)return reply({error:"האימון כבר נשלח. יש לפתוח מחדש את המשימה."},409);
     return reply({task:result.data});

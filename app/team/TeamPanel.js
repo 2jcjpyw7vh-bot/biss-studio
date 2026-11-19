@@ -6,6 +6,7 @@ import SubstituteOfferPanel from "./SubstituteOfferPanel";
 import OfferContactLinks from "./OfferContactLinks";
 import StaffAccessShare from "./StaffAccessShare";
 import RecruitmentPanel from "./RecruitmentPanel";
+import ArboxStaffMapping from "./ArboxStaffMapping";
 const roles={manager:"מנהלת",instructor:"מדריכה",trainee:"מתאמנת"};
 const actionLabels={"group.created":"קבוצה נוצרה","session.created":"אימון תוכנן","adaptation.created":"התאמה נוספה","handoff.created":"עדכון למדריכה נשמר","workout.attached":"אימון נשמר לקבוצה","program.assigned":"תוכנית אישית נשמרה","user.created":"משתמשת נוספה","user.updated":"הרשאות משתמשת עודכנו","user.invited":"הזמנת כניסה נשלחה","substitute_offer.created":"הצעת החלפה נוצרה","substitute_offer.accepted":"הצעת החלפה אושרה","substitute_offer.declined":"הצעת החלפה נדחתה","substitute_offer.cancelled":"הצעת החלפה בוטלה","equipment.created":"פריט ציוד נוסף","equipment.updated":"מלאי ציוד עודכן","equipment.deleted":"פריט ציוד נמחק"};
 const areas={all:"הכול",equipment:"מלאי וציוד",team:"צוות והחלפות",training:"קבוצות ואימונים"};
@@ -39,6 +40,7 @@ export default function TeamPanel({draftWorkout}){
   <div className="continuity-login">{!isManager&&<label className="field">PIN מנהל<input type="password" value={pin} onChange={e=>setPin(e.target.value)}/></label>}<button className="btn primary" onClick={()=>call()} disabled={(!pin&&!isManager)||busy}>{data?"רענון צוות והצעות":"פתיחת ניהול"}</button></div>
   {msg&&<div role="status" className={msg.startsWith("✓")?"safe":"notice"}>{msg}</div>}
   {data&&<>
+   {isManager&&<ArboxStaffMapping users={users} onSaved={()=>call()}/>}
    <div className="continuity-grid">
     <SubstituteOfferPanel data={data} call={call} busy={busy} draftWorkout={draftWorkout}/>
     <RecruitmentPanel pin={pin} sessions={data.planned_sessions||[]} onAssigned={()=>call()}/>

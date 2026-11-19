@@ -8,6 +8,7 @@ import BoneDemoLinks from "../exercise/BoneDemoLinks";
 import {boneDemos} from "../../lib/bone-strength";
 import SavedWorkoutLibrary from "./SavedWorkoutLibrary";
 import WorkoutTasksList from "./WorkoutTasksList";
+import InstructorArboxSchedule from "./InstructorArboxSchedule";
 
 const management=[
   ["integrations","לוח ארבוקס","שיעורים קרובים ובקשות לבניית אימון"],
@@ -63,6 +64,7 @@ export default function MySessionsPage(){
     </section>
     <nav className="personal-shortcuts" aria-label="באזור האישי">
       <a href="#workout-tasks">בקשות לבניית אימון</a><a href="#upcoming-sessions">השיבוצים שלי</a><a href="#saved-workouts">האימונים ששמרתי</a>
+      <a href="#arbox-personal-schedule">השיעורים שלי בארבוקס</a>
     </nav>
     {user.role==="manager"&&<section className="personal-management" aria-labelledby="management-title"><h2 id="management-title">ניהול הסטודיו</h2><div className="personal-tools">
       {management.map(([tab,title,description])=><Link href={`/?tab=${tab}`} className="personal-tool" key={tab}><strong>{title}</strong><span>{description}</span></Link>)}
@@ -72,6 +74,7 @@ export default function MySessionsPage(){
     {ready&&<>
       {ready.offers?.length>0&&<section className="panel"><h2>הצעות החלפה שממתינות לתשובה</h2>{ready.offers.map(offer=><article className="card row between" key={offer.id}><div><strong>{offer.session.title}</strong><div className="small">{new Date(offer.session.starts_at).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem"})}</div></div><Link className="btn primary" href={`/substitute/${offer.token}`}>צפייה בהצעה ומתן תשובה</Link></article>)}</section>}
       <WorkoutTasksList key={user.id}/>
+      <InstructorArboxSchedule key={`arbox:${user.id}`}/>
       <section className="panel" id="upcoming-sessions"><div className="row between"><h2>השיבוצים שלי</h2><label className="field">מועד<select value={sessionView} onChange={event=>setSessionView(event.target.value)}><option value="upcoming">האימונים הקרובים</option><option value="all">גם מהשבועיים האחרונים</option></select></label></div>
         {user.role==="manager"&&<label className="permission-check"><input type="checkbox" checked={teamView} onChange={event=>setTeamView(event.target.checked)}/>הצגת השיבוצים של כל הצוות</label>}
         {sessions.length===0&&<div className="personal-empty"><strong>אין שיבוצים בתצוגה הזו</strong><p>בקשות להכנת אימון מופיעות בנפרד למעלה.</p></div>}
