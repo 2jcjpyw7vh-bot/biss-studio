@@ -9,3 +9,11 @@ test("a generic tutorial cannot replace the requested exercise",()=>{
   assert.equal(selectExerciseVideo([pallof,triceps],"Waist Anchor Triceps Press"),triceps);
   assert.equal(selectExerciseVideo([],"TRX Low Row"),null);
 });
+
+test("specialty demonstrations preserve TRX and Pilates rather than matching only a generic movement",()=>{
+  const generic={id:{videoId:"abcdefghijk"},snippet:{title:"How to Chest Press"}};
+  const trx={id:{videoId:"lmnopqrstuv"},snippet:{title:"How to TRX Chest Press"}};
+  assert.equal(selectExerciseVideo([generic],"TRX Chest Press"),null);
+  assert.equal(selectExerciseVideo([generic,trx],"TRX Chest Press"),trx);
+  assert.equal(selectExerciseVideo([{id:{videoId:"abcdefghijk"},snippet:{title:"Heel Slide Tutorial"}}],"Supine Pilates Heel Slide"),null);
+});
