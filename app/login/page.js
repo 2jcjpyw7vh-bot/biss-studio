@@ -4,6 +4,7 @@ import Link from "next/link";
 import {useEffect,useState} from "react";
 import {supabaseBrowser} from "../../lib/supabase-browser";
 import {loginDestination, loginTarget} from "../../lib/studio-login";
+import {personalArea} from "../../lib/studio-navigation";
 
 const roleLabels={manager:"מנהלת",instructor:"מדריכה",trainee:"מתאמנת"};
 
@@ -35,7 +36,7 @@ export default function LoginPage() {
 
   async function finish(session, target) {
     const user = await studioProfile(session);
-    const destination = loginDestination(target, user.role);
+    const destination = loginDestination(target, user.role)||(!target?personalArea(user.role):"");
     if (destination) {
       window.location.replace(destination);
       return;
@@ -157,8 +158,8 @@ export default function LoginPage() {
 
   return <main className="shell auth-shell"><section className="panel auth-card">
     <div className="eyebrow">BISS STUDIO · כניסה אישית</div>
-    <h1>{next === "arbox" ? "כניסת מנהלת ללוח Arbox" : "כניסה אישית ל־BISS Studio"}</h1>
-    <p className="sub">השתמשי בכתובת שרשומה בסטודיו. אפשר להיכנס בקישור או בקוד חד־פעמי מהמייל.</p>
+    <h1>{next==="account"?"הגדרות החשבון":next === "arbox" ? "כניסת מנהלת ללוח Arbox" : "כניסה אישית ל־BISS Studio"}</h1>
+    {!profile&&<p className="sub">כניסה עם המייל הרשום בסטודיו. החיבור נשמר במכשיר הזה גם לביקור הבא.</p>}
     {!client && <div className="notice">שירות הכניסה של BISS Studio אינו זמין כרגע.</div>}
     {client && checking && <p role="status">בודק כניסה קיימת…</p>}
     {client && !checking && !blocked && tokenHash && <div className="safe">

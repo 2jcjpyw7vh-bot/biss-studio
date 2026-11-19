@@ -1,4 +1,5 @@
 "use client";
+import {studioAdminHeaders} from "../../lib/studio-admin-client";
 
 import {studioShareMessage} from "../../lib/studio-share-message";
 import {useState} from "react";
@@ -53,7 +54,7 @@ export default function RecruitmentPanel({pin,sessions,onAssigned}) {
 
   async function request(path="",body) {
     const response=await fetch(`/api/recruitment${path}`,{
-      method:body?"POST":"GET",headers:{"Content-Type":"application/json","x-admin-pin":pin},
+      method:body?"POST":"GET",headers:await studioAdminHeaders(pin),
       body:body?JSON.stringify(body):undefined,cache:"no-store"
     });
     const result=await response.json();
@@ -71,7 +72,7 @@ export default function RecruitmentPanel({pin,sessions,onAssigned}) {
   async function list(){setPosts((await request()).posts);}
   async function load(id){setDetail(await request(`?id=${encodeURIComponent(id)}`));}
   async function downloadCertificate(id){
-    const response=await fetch(`/api/recruitment?certificate=${encodeURIComponent(id)}`,{headers:{"x-admin-pin":pin},cache:"no-store"});
+    const response=await fetch(`/api/recruitment?certificate=${encodeURIComponent(id)}`,{headers:await studioAdminHeaders(pin),cache:"no-store"});
     if(!response.ok)throw Error("לא ניתן להוריד את תעודת ההסמכה.");
     const file=await response.blob();
     const url=URL.createObjectURL(file);

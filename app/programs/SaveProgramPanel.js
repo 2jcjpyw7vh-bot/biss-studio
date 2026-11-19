@@ -1,9 +1,13 @@
 "use client";
+import {useStudioSession} from "../StudioSession";
+import {studioAdminHeaders} from "../../lib/studio-admin-client";
 import {useRef,useState} from "react";
 import {programDateError} from "../../lib/program-session";
 import ProgramAssignmentHistory from "./ProgramAssignmentHistory";
 
 export default function SaveProgramPanel({program}) {
+  const {user}=useStudioSession();
+  const isManager=user?.role==="manager";
   const [open,setOpen] = useState(false);
   const [pin,setPin] = useState("");
   const [data,setData] = useState(null);
@@ -20,7 +24,7 @@ export default function SaveProgramPanel({program}) {
     try {
       const response = await fetch("/api/programs", {
         method:body ? "POST" : "GET",
-        headers:{"Content-Type":"application/json","x-admin-pin":pin},
+        headers:await studioAdminHeaders(pin),
         body,cache:"no-store"
       });
       const result = await response.json();
@@ -63,8 +67,8 @@ export default function SaveProgramPanel({program}) {
   return <div className="save-workout-panel">
     <div className="row between"><strong>{program?"שמירת תוכנית אישית":"צפייה בשיוכי תוכניות"}</strong><button className="btn" disabled={busy} onClick={()=>setOpen(false)}>סגירה</button></div>
     <div className="filters">
-      <label className="field">PIN מנהל<input type="password" value={pin} disabled={busy} onChange={e=>{setPin(e.target.value);setData(null);setTraineeId("");setMessage("");}}/></label>
-      {!data&&<button className="btn" disabled={!pin||busy} onClick={()=>request()}>טעינת משתמשות</button>}
+      {!isManager&&<label className="field">PIN מנהל<input type="password" value={pin} disabled={busy} onChange={e=>{setPin(e.target.value);setData(null);setTraineeId("");setMessage("");}}/></label>}
+      {!data&&<button className="btn" disabled={(!pin&&!isManager)||busy} onClick={()=>request()}>טעינת משתמשות</button>}
     </div>
     {data&&<label className="field">מתאמנת<select name="trainee_id" disabled={busy} value={traineeId} onChange={e=>{setTraineeId(e.target.value);setMessage("");}}>
         <option value="" disabled>בחירה</option>{data.trainees.map(x=><option key={x.id} value={x.id}>{x.full_name}</option>)}
@@ -79,7 +83,7 @@ export default function SaveProgramPanel({program}) {
         <label className="field">מתאריך<input name="starts_on" type="date"/></label>
         <label className="field">עד תאריך<input name="ends_on" type="date"/></label>
       </div>
-      <button className="btn primary" disabled={busy||!pin||!traineeId}>{busy?"שומר…":"שמירת תוכנית"}</button>
+      <button className="btn primary" disabled={busy||(!pin&&!isManager)||!traineeId}>{busy?"שומר…":"שמירת תוכנית"}</button>
     </form>}
     {data?.trainees.length===0&&<div className="notice">יש להוסיף תחילה מתאמנת פעילה במסך צוות והרשאות.</div>}
     {message&&<div role="status" className={message.startsWith("✓")?"safe":"notice"}>{message}</div>}
