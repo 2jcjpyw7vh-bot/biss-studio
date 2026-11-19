@@ -38,3 +38,8 @@
 
 - `reports/Recruitment-Review-2026-11-19.md` — טיוטת גיוס לאישור, מועמדויות, ביטוח/הסמכות, בדיקות חיות ומגבלות החיבור לרשתות.
 - `reports/recruitment-work/applied-schema.sql` — SQL שהוחל בפרויקט Studio בלבד; הגירת `studio_recruitment_documents_and_review`.
+
+- `reports/Customer-Visits-2026-11-19.md` — customer visit pilot, DJ/workout/leisure flexibility, manager workflow, private ownership, farm shop configuration and remaining automatic Arbox work.
+- `reports/visit-work/schema.sql` — full visit schema for fresh recovery; do not rerun blindly against the migrated project.
+- `reports/visit-work/activity-migration.sql` — incremental activity selection migration already applied to Studio.
+- `reports/visit-work/database-qa.sql` — rollback-only live database authorization, idempotency and overlap checks.
