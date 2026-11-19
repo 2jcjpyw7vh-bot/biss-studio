@@ -1,6 +1,6 @@
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../../lib/supabase";
-import {isRecruitmentId,recruitmentPublic,recruitmentText} from "../../../../lib/recruitment";
+import {isRecruitmentId,recruitmentPublic,recruitmentDocumentError,recruitmentText} from "../../../../lib/recruitment";
 import {certificateFormat,certificateMaxBytes} from "../../../../lib/recruitment-certificate";
 
 export const dynamic="force-dynamic";
@@ -41,6 +41,7 @@ export async function POST(req,{params}) {
   const details={
     name:recruitmentText(body?.name,100),email:recruitmentText(body?.email,180).toLowerCase(),
     phone:recruitmentText(body?.phone,35),qualifications:recruitmentText(body?.qualifications,800),
+    insurance_valid_until:recruitmentText(body?.insuranceValidUntil,10),
     professional_insurance:body?.professionalInsurance==="yes"||body?.professionalInsurance===true,
     experience:recruitmentText(body?.experience,600),note:recruitmentText(body?.note,900)
   };
@@ -50,17 +51,28 @@ export async function POST(req,{params}) {
   }
   if(!details.professional_insurance)return reply({error:"יש לאשר שיש לך ביטוח אחריות מקצועית בתוקף."},400);
   if(!details.qualifications)return reply({error:"יש למלא את סוג ההסמכה שלך."},400);
-  const certificate=form?.get("certificate");
-  if(certificate && typeof certificate!=="string" && certificate.size){
-    if(certificate.size>certificateMaxBytes)return reply({error:"אפשר לצרף תעודה בגודל של עד 3 MB."},413);
-    const bytes=Buffer.from(await certificate.arrayBuffer());
-    const format=certificateFormat(bytes);
-    if(!format)return reply({error:"אפשר לצרף תעודה בפורמט PDF, JPG או PNG."},400);
-    details.certificate_mime=format.mime;
-    details.certificate_base64=bytes.toString("base64");
+  const totalBytes=["certificate","insurance"].reduce((sum,kind)=>sum+(Number(form?.get(kind)?.size)||0),0);
+  if(totalBytes>certificateMaxBytes)return reply({error:"שני המסמכים יחד מוגבלים ל־3 MB. אפשר לצלם או לשמור בגודל קטן יותר."},413);
+  for(const kind of ["certificate","insurance"]){
+    const file=form?.get(kind);
+    if(file&&typeof file!=="string"&&file.size){
+      if(file.size>certificateMaxBytes)return reply({error:"כל קובץ מוגבל ל־3 MB."},413);
+      const bytes=Buffer.from(await file.arrayBuffer());
+      const format=certificateFormat(bytes);
+      if(!format)return reply({error:"אפשר לצרף PDF, JPG או PNG בלבד."},400);
+      details[`${kind}_mime`]=format.mime;
+      details[`${kind}_base64`]=bytes.toString("base64");
+    }
   }
   const db=supabaseAdmin();
   if(!db)return reply({error:"שירות Studio אינו זמין"},503);
+  const post=await db.from("biss_recruitment_posts").select("status,terms").eq("token",token).maybeSingle();
+  if(post.error)return reply({error:"לא ניתן לבדוק תנאי פרסום"},503);
+  if(!post.data||post.data.status!=="open")return closed();
+  if(post.data.terms.documentPolicy===1){
+    const error=recruitmentDocumentError(details,post.data.terms,ids);
+    if(error)return reply({error},400);
+  }
   const {data,error}=await db.rpc("studio_apply_recruitment",{p_token:token,p_details:details,p_session_ids:ids});
   if(error)return reply({error:"לא ניתן לשלוח מועמדות. אפשר לנסות שוב."},503);
   if(data==="invalid")return reply({error:"יש למלא את ההסמכות והניסיון שנדרשו בפרסום."},400);

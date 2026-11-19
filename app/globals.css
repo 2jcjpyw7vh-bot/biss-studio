@@ -722,3 +722,5 @@ input,select,textarea{min-height:46px;border-color:#dce4de;background:#fcfdfc}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn,.card,.personal-tool{transition:none}}
 
 .continuity-create>summary{cursor:pointer;font-weight:700;padding:14px 0;color:#285d3d}.personal-workspace .card+.card{margin-top:10px}
+
+.recruitment-ad{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.7;background:#f4f8f5;padding:20px;border-radius:16px;max-width:100%;min-width:0;}
