@@ -54,7 +54,7 @@ export default function MyProgramPage(){
   setStatus({kind:"loading",text:"טוען את התוכנית שלך…"});
   setAttempt(value=>value+1);
  }
- return <main className="shell trainee-shell"><div className="row between"><div><div className="eyebrow">BISS STUDIO · אימון עצמאי</div><h1>התוכנית שלי</h1></div><Link className="btn" href="/">חזרה למערכת</Link></div>
+ return <main className="shell trainee-shell"><div className="row between"><div><div className="eyebrow">BISS STUDIO · אימון עצמאי</div><h1>התוכנית שלי</h1></div><Link className="btn" href="/my-visits">חזרה לביקורים שלי</Link></div>
   {status.text&&<section className="panel notice" role="status">
    {status.text} {status.kind==="login"&&<Link href="/login">מעבר לכניסה</Link>}
    {status.kind==="retry"&&<button type="button" className="btn" onClick={retry}>ניסיון חוזר</button>}

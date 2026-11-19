@@ -6,7 +6,7 @@ import {usePathname} from "next/navigation";
 import {useStudioSession} from "./StudioSession";
 import {personalArea,publicStudioPath} from "../lib/studio-navigation";
 
-const roles={manager:"מנהלת הסטודיו",instructor:"מדריכה",trainee:"מתאמנת"};
+const roles={manager:"מנהלת הסטודיו",instructor:"מדריכה",trainee:"לקוח/ה"};
 
 export default function StudioAccountBar(){
   const path=usePathname();
