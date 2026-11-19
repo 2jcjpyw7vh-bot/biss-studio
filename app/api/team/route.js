@@ -33,18 +33,24 @@ export async function POST(req){if(!await verifyAdminPin(req))return reply({erro
  else if(b.action==="user_update"){
   const id=clean(b.id,120),role=clean(b.role,20),status=clean(b.status,20);
   if(!id||!["manager","instructor","trainee"].includes(role)||!["active","inactive","invited"].includes(status))return reply({error:"פרטי ההרשאה אינם תקינים"},400);
-  const{data:current,error:currentError}=await db.from("biss_users").select("id,full_name,role,status").eq("id",id).single();if(currentError||!current)return reply({error:"המשתמשת לא נמצאה"},404);
+  const{data:current,error:currentError}=await db.from("biss_users").select("id,full_name,email,auth_user_id,role,status").eq("id",id).single();if(currentError||!current)return reply({error:"המשתמשת לא נמצאה"},404);
   if(status==="invited"&&current.status!=="invited")return reply({error:"מצב הזמנה נקבע בעת ההזמנה"},400);
   if(current.role==="manager"&&current.status==="active"&&(role!=="manager"||status!=="active")){const{count,error:countError}=await db.from("biss_users").select("id",{count:"exact",head:true}).eq("role","manager").eq("status","active");if(countError)throw countError;if((count||0)<=1)return reply({error:"לא ניתן להשבית את המנהלת הפעילה האחרונה"},409)}
+  const full_name=b.full_name===undefined?current.full_name:clean(b.full_name,120);
+  const email=b.email===undefined?current.email:clean(b.email,180).toLowerCase();
+  if(!full_name || (email && !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email)))return reply({error:"יש להזין שם וכתובת מייל תקינים"},400);
+  if(current.auth_user_id && email!==current.email)return reply({error:"שינוי מייל בחשבון שכבר חובר דורש אימות כתובת חדשה. אפשר לעדכן כאן שם וטלפון."},409);
+  const contact={full_name,email,...(b.phone!==undefined?{phone:clean(b.phone,40)}:{})};
   const can_view_health=role==="manager"||(role==="instructor"&&String(b.can_view_health)==="true");
-  const{error}=await db.from("biss_users").update({role,status,can_view_health}).eq("id",id);if(error)throw error;
+  const{error}=await db.from("biss_users").update({...contact,role,status,can_view_health}).eq("id",id);if(error?.code==="23505")return reply({error:"כתובת המייל כבר רשומה למשתמשת אחרת"},409);if(error)throw error;
   await writeAudit(db,{action:"user.updated",entityType:"user",entityId:id,label:current.full_name,metadata:{role,status}})
  }
  else if(b.action==="invite_user"){
   const id=clean(b.id,120);if(!id)return reply({error:"חסרה משתמשת"},400);
-  const{data:person,error:personError}=await db.from("biss_users").select("id,full_name,email,status,auth_user_id").eq("id",id).single();if(personError||!person)return reply({error:"המשתמשת לא נמצאה"},404);if(person.status!=="active"||!person.email)return reply({error:"נדרש חשבון פעיל עם כתובת מייל"},409);if(person.auth_user_id)return reply({error:"למשתמשת כבר קיים חשבון כניסה"},409);
-  const base=(process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000").replace(/\/$/,"");const{data:invited,error:inviteError}=await db.auth.admin.inviteUserByEmail(person.email,{redirectTo:`${base}/login`});if(inviteError)throw inviteError;
-  const{error:linkError}=await db.from("biss_users").update({auth_user_id:invited.user.id}).eq("id",id).is("auth_user_id",null);if(linkError)throw linkError;
+  const{data:person,error:personError}=await db.from("biss_users").select("id,full_name,email,status,auth_user_id").eq("id",id).single();if(personError||!person)return reply({error:"המשתמשת לא נמצאה"},404);if(person.status!=="active"||!person.email)return reply({error:"נדרש חשבון פעיל עם כתובת מייל"},409);
+  const base=(process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000").replace(/\/$/,"");
+  const {error:inviteError}=await db.auth.signInWithOtp({email:person.email,options:{shouldCreateUser:true,emailRedirectTo:base+"/login?next=my-sessions"}});
+  if(inviteError)return reply({error:inviteError.status===429?"שליחת המייל נחסמה בגלל מכסת השליחה. אפשר לשלוח כניסה אישית בוואטסאפ מתוך החשבון האישי של המנהלת.":"ספק המייל דחה את הבקשה. בדקו את הכתובת או השתמשו בכניסה בוואטסאפ."},inviteError.status===429?429:503);
   await writeAudit(db,{action:"user.invited",entityType:"user",entityId:id,label:person.full_name,metadata:{status:"invited"}})
  }
  else if(b.action==="offer_group"){

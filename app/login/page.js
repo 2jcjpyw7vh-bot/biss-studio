@@ -68,7 +68,11 @@ export default function LoginPage() {
       if (error) throw error;
       if (data.session) {
         setBlocked(true);
-        await finish(data.session, target);
+        if (url.searchParams.get("switch") === "1") {
+          setProfile(await studioProfile(data.session));
+          setAccessToken(data.session.access_token);
+          setMessage("כדי לפתוח משימה ששויכה לחשבון אחר, לחצי על יציאה והחלפת חשבון והיכנסי במייל שאליו נשלחה הבקשה.");
+        } else await finish(data.session, target);
       }
     }
     check().catch(error => setMessage(error.message || "לא ניתן לבדוק את הכניסה.")).finally(() => setChecking(false));

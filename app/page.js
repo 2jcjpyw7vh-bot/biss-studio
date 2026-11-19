@@ -125,7 +125,7 @@ export default function Home(){
          setTab("builder");
        }
        setTaskState(result);
-     }).catch(error=>setTaskState({error:error.message,login:error.status===401}));
+     }).catch(error=>setTaskState({id:taskId,error:error.message,login:error.status===401,wrongAccount:[403,404].includes(error.status)}));
    }
    if(requested==="exercises")setTab("exercises");
    if(requested==="equipment")setTab("equipment");
@@ -519,7 +519,8 @@ async function addEquipment(e){
  if(taskState&&!task)return <main className="shell"><section className="panel">
    <h1>משימת בניית אימון</h1>
    <p role="status">{taskState.error||"טוען את המשימה…"}</p>
-   {taskState.login&&<Link className="btn primary" href="/login?next=my-sessions">כניסה לחשבון Studio</Link>}
+   {taskState.login&&<Link className="btn primary" href={`/login?next=${encodeURIComponent(`build-task:${taskState.id}`)}`}>כניסה ופתיחת המשימה</Link>}
+   {taskState.wrongAccount&&<Link className="btn" href={`/login?switch=1&next=${encodeURIComponent(`build-task:${taskState.id}`)}`}>החלפת חשבון לפתיחת המשימה</Link>}
  </section></main>;
 
  return <main className="shell v26-shell">
