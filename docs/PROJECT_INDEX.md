@@ -2,6 +2,9 @@
 
 ## מתחילים כאן
 
+- `reports/Pilates-TRX-Variation-2026-11-19.md` — סוגי פילאטיס/TRX, שינוי מנגנון ההחלפה, בדיקות חיות והגירת פלייליסטים.
+- `reports/Arbox-Instructor-Workspace-2026-11-19.md` — שיבוץ צוות מארבוקס, קישור חשבונות, משימות לסדרה ועריכת אימון בנוי.
+
 - `reports/UX-2026-11-19.md` — אזור אישי, ניהול החיבור, בדיקת מסך צר, ממצאים והמשך ליטוש. כניסה לצוות: https://biss-studio.vercel.app/my-sessions.
 
 - `SUCCESSOR_START_HERE.txt` — דף קצר למי שמקבל אחריות ללא חפיפה.
