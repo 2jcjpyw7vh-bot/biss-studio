@@ -4,6 +4,7 @@ create table public.biss_visits (
  arbox_booking_id text not null unique check(length(arbox_booking_id) between 1 and 120),
  title text not null check(length(title) between 1 and 180),
  service_kind text not null check(service_kind in ('workout','dj','leisure','mixed')),
+ activities jsonb check(activities is null or (jsonb_typeof(activities)='array' and activities <@ '["workout","dj","leisure"]'::jsonb)),
  starts_at timestamptz not null, ends_at timestamptz not null,
  status text not null default 'confirmed' check(status in ('confirmed','cancelled','completed')),
  party_size integer not null check(party_size between 1 and 12),
@@ -22,7 +23,7 @@ create index biss_visits_resource_start_idx on public.biss_visits(resource_key,s
 alter table public.biss_visits enable row level security;
 revoke all on public.biss_visits from public,anon,authenticated;
 grant select,insert,update,delete on public.biss_visits to service_role;
-create function public.studio_create_visit(p_visit jsonb,p_manager_id uuid)
+create or replace function public.studio_create_visit(p_visit jsonb,p_manager_id uuid)
 returns text language plpgsql security invoker set search_path='' as $$
 declare existing public.biss_visits%rowtype; begin
  if not exists(select 1 from public.biss_users where id=p_manager_id and role='manager' and status='active') then return 'denied'; end if;
@@ -34,8 +35,8 @@ declare existing public.biss_visits%rowtype; begin
   return 'duplicate';
  end if;
  if exists(select 1 from public.biss_visits where status='confirmed' and resource_key='studio' and starts_at<(p_visit->>'ends_at')::timestamptz and ends_at>(p_visit->>'starts_at')::timestamptz) then return 'overlap'; end if;
- insert into public.biss_visits(id,customer_id,arbox_booking_id,title,service_kind,starts_at,ends_at,party_size,included_items,address,instructions,equipment_notes,verified_by)
- values((p_visit->>'id')::uuid,(p_visit->>'customer_id')::uuid,p_visit->>'arbox_booking_id',p_visit->>'title',p_visit->>'service_kind',(p_visit->>'starts_at')::timestamptz,(p_visit->>'ends_at')::timestamptz,(p_visit->>'party_size')::integer,p_visit->'included_items',p_visit->>'address',p_visit->>'instructions',p_visit->>'equipment_notes',p_manager_id);
+ insert into public.biss_visits(id,customer_id,arbox_booking_id,title,service_kind,activities,starts_at,ends_at,party_size,included_items,address,instructions,equipment_notes,verified_by)
+ values((p_visit->>'id')::uuid,(p_visit->>'customer_id')::uuid,p_visit->>'arbox_booking_id',p_visit->>'title',p_visit->>'service_kind',p_visit->'activities',(p_visit->>'starts_at')::timestamptz,(p_visit->>'ends_at')::timestamptz,(p_visit->>'party_size')::integer,p_visit->'included_items',p_visit->>'address',p_visit->>'instructions',p_visit->>'equipment_notes',p_manager_id);
  return 'saved';
 end $$;
 revoke all on function public.studio_create_visit(jsonb,uuid) from public,anon,authenticated;
