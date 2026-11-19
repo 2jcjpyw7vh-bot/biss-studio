@@ -1,6 +1,7 @@
 "use client";
 import {studioAdminHeaders} from "../../lib/studio-admin-client";
 
+import {whatsappNumber} from "../../lib/substitute-contact";
 import {studioShareMessage} from "../../lib/studio-share-message";
 import {useEffect,useState} from "react";
 import {recruitmentApprovalError,recruitmentDocumentError,recruitmentAd,recruitmentDate} from "../../lib/recruitment";
@@ -205,7 +206,7 @@ export default function RecruitmentPanel({pin,sessions,onAssigned,users=[],initi
           </div>
         </>}
         {post.status==="open"&&eligible.filter(person=>post.terms.recipientIds?.includes(person.id)).map(person=><div className="card" key={person.id}><strong>{person.full_name}</strong><div className="row">
-          {person.phone&&<a className="btn green" target="_blank" rel="noreferrer" href={`https://wa.me/${person.phone.replace(/\D/g,"").replace(/^0/,"972")}?text=${encodeURIComponent(recruitmentAd(post.terms,link))}`}>שליחה אישית ב־WhatsApp</a>}
+          {whatsappNumber(person.phone)&&<a className="btn green" target="_blank" rel="noreferrer" href={`https://wa.me/${whatsappNumber(person.phone)}?text=${encodeURIComponent(recruitmentAd(post.terms,link))}`}>שליחה אישית ב־WhatsApp</a>}
           {person.email&&<a className="btn" href={`mailto:${encodeURIComponent(person.email)}?subject=${encodeURIComponent(post.terms.title+" · BISS Studio")}&body=${encodeURIComponent(recruitmentAd(post.terms,link))}`}>פתיחת מייל בתוכנת הדואר</a>}
         </div></div>)}
         {post.status!=="open"&&<p>הפרסום סגור להגשת מועמדות.</p>}

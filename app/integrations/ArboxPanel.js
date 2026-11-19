@@ -149,7 +149,7 @@ export default function ArboxPanel() {
               {matchLabels[lesson.match]&&<span className={`tag ${lesson.match==="linked"?"green":""}`}>{matchLabels[lesson.match]}</span>}
             </div>
             <div className="small">{displayDate(lesson.date)} · <bdi>{lesson.start}{lesson.end ? `–${lesson.end}` : ""}</bdi>{lesson.location && ` · ${lesson.location}`}</div>
-            <div className={lesson.instructorName?"small":"notice"}>{lesson.instructorName?`מדריכה: ${lesson.instructorName}${lesson.secondInstructorName?` · ${lesson.secondInstructorName}`:""}`:"מדריכה לא משובצת"}</div>
+            <div className={lesson.instructorName||lesson.secondInstructorName?"small":"notice"}>{lesson.instructorName||lesson.secondInstructorName?`מדריכה: ${[lesson.instructorName,lesson.secondInstructorName].filter(Boolean).join(" · ")}`:"מדריכה לא משובצת"}</div>
             <div className="small">{lesson.capacity!==null && `קיבולת ${lesson.capacity}`}{lesson.capacity!==null && lesson.registrations!==null && " · "}{lesson.registrations!==null && `נרשמו ${lesson.registrations}`}</div>
             {!lesson.cancelled&&lesson.scheduleId&&<button className="btn" onClick={()=>setSelectedLesson(selectedLesson===lesson.scheduleId?"":lesson.scheduleId)}>בקשת בניית אימון</button>}
             {!lesson.cancelled&&lesson.scheduleId&&!lesson.instructorName&&!lesson.secondInstructorName&&<ArboxRecruitment lesson={lesson}/>}
