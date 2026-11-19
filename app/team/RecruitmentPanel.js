@@ -132,7 +132,7 @@ export default function RecruitmentPanel({pin,sessions,onAssigned,users=[],initi
         {sessions.length===0?<p>תחילה יש לתכנן אימון עתידי במסך ההחלפה.</p>:<form className="save-workout-panel" onSubmit={publish}>
           <div className="filters">
             <label className="field">כותרת וסוג האימון<input name="title" defaultValue={sessions.find(session=>session.id===initialSessionId)?.title||""} required maxLength={120}/></label>
-            <label className="field">כתובת מלאה לניווט<input name="address" required maxLength={220}/></label>
+            <label className="field">כתובת מלאה לניווט<input name="address" defaultValue="הזורעים 6 מושב היוגב" required maxLength={220}/></label>
             <label className="field">תשלום ברירת מחדל לאימון (₪)<input name="defaultPay" {...money} required/></label>
             <label className="field">נסיעות להגעה לאימון אחד (₪)<input name="travelSingle" {...money} required/></label>
             <label className="field">נסיעות להגעה לכמה אימונים (₪)<input name="travelMultiple" {...money} required/></label>
