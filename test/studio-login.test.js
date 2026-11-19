@@ -13,3 +13,12 @@ test("the instructor library accepts both instructor and manager roles", () => {
   assert.equal(loginDestination("my-sessions", "manager"), "/my-sessions");
   assert.equal(loginDestination("my-sessions", "trainee"), "");
 });
+
+test("login resumes the assigned task without allowing arbitrary redirects", () => {
+  const id="5f89d119-1c11-4aaf-a6f1-db29f34ff92d";
+  assert.equal(loginDestination(loginTarget(`build-task:${id}`),"instructor"),`/?buildTask=${id}`);
+  assert.equal(loginDestination(`build-task:${id}`,"manager"),`/?buildTask=${id}`);
+  assert.equal(loginDestination(`build-task:${id}`,"trainee"),"");
+  assert.equal(loginTarget("build-task:https://example.com"),"");
+  assert.equal(loginTarget(`build-task:${id}&tab=team`),"");
+});

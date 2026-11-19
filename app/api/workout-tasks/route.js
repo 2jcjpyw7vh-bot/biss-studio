@@ -40,7 +40,7 @@ export async function GET(req) {
   let query=tasks(db).select("id,title,starts_at,instructor_id,submitted_at").order("starts_at",{ascending:false}).limit(50);
   if(profile.role!=="manager")query=query.eq("instructor_id",profile.id);
   const {data,error}=await query;
-  return error?reply({error:"לא ניתן לטעון משימות בנייה."},503):reply({tasks:data});
+  return error?reply({error:"לא ניתן לטעון משימות בנייה."},503):reply({tasks:data,canManage:profile.role==="manager"});
 }
 
 export async function POST(req) {

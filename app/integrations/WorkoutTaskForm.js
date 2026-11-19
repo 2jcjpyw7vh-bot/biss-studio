@@ -2,12 +2,14 @@
 
 import {useEffect,useState} from "react";
 import {taskLimitations,taskWorkoutTypes,suggestedLessonDuration} from "../../lib/workout-task";
+import StaffAccessShare from "../team/StaffAccessShare";
 import {whatsappNumber} from "../../lib/substitute-contact";
 
 export default function WorkoutTaskForm({lesson,token}) {
   const [instructors,setInstructors]=useState([]);
   const [recipient,setRecipient]=useState(null);
   const [link,setLink]=useState("");
+  const [taskId,setTaskId]=useState("");
   const [message,setMessage]=useState("");
   const [busy,setBusy]=useState(false);
 
@@ -35,6 +37,7 @@ export default function WorkoutTaskForm({lesson,token}) {
       });
       const result=await response.json();
       if(!response.ok)throw Error(result.error);
+      setTaskId(result.task.id);
       setRecipient(instructors.find(person=>person.id===fields.instructorId));
       setLink(new URL(`/?buildTask=${result.task.id}`,window.location.origin).href);
     } catch(error) {
@@ -65,11 +68,12 @@ export default function WorkoutTaskForm({lesson,token}) {
       </div></fieldset>
       <button className="btn primary" disabled={busy||!instructors.length}>יצירת קישור לבניית אימון</button>
     </form>:<>
-      <p className="safe">המשימה נשמרה ונוספה ל״האימונים שלי״ של המדריכה שנבחרה.</p>
+      <p className="safe">המשימה נשמרה עבור {recipient?.full_name}. כעת בחרי איך לשלוח אותה למדריכה.</p>
+      <StaffAccessShare userId={recipient?.id} taskId={taskId} name={recipient?.full_name} token={token}/>
       <div className="row">
         <button className="btn" onClick={async()=>{try{await navigator.clipboard.writeText(link);setMessage("הקישור הועתק.");}catch{setMessage("אפשר להעתיק את הקישור מהשדה.");}}}>העתקת קישור</button>
-        <a className="btn green" target="_blank" rel="noreferrer" href={`https://wa.me/${whatsappNumber(recipient?.phone)}?text=${encodeURIComponent(shareText)}`}>WhatsApp</a>
-        <a className="btn blue" href={`mailto:${encodeURIComponent(recipient?.email||"")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(shareText)}`}>מייל</a>
+        <a className="btn green" target="_blank" rel="noreferrer" href={`https://wa.me/${whatsappNumber(recipient?.phone)}?text=${encodeURIComponent(shareText)}`}>שיתוף קישור רגיל בוואטסאפ</a>
+        <a className="btn blue" href={`mailto:${encodeURIComponent(recipient?.email||"")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(shareText)}`}>פתיחת טיוטת מייל</a>
       </div>
       <input value={link} dir="ltr" aria-label="קישור למשימת בניית אימון" readOnly onFocus={event=>event.target.select()}/>
     </>}
