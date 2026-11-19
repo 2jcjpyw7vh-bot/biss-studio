@@ -69,7 +69,7 @@ export default function RecruitmentPage() {
     try {
       const fields=new FormData(event.currentTarget);
       const certificate=fields.get("certificate");
-      if(certificate?.size>certificateMaxBytes)throw Error("אפשר לצרף תעודה בגודל של עד 3 MB.");
+      if((certificate?.size||0)+(fields.get("insurance")?.size||0)>certificateMaxBytes)throw Error("שני המסמכים יחד מוגבלים ל־3 MB.");
       fields.set("sessionIds",JSON.stringify(selected));
       const response=await fetch(`/api/recruitment/${token}`,{
         method:"POST",body:fields
@@ -93,6 +93,8 @@ export default function RecruitmentPage() {
           <a className="btn" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(terms.address)}`}>פתיחה ב־Google Maps</a>
         </div>
       </div>
+      <a href="https://www.instagram.com/biss.vibes/" target="_blank" rel="noreferrer"><img src={`/api/share-image?token=${encodeURIComponent(token)}`} alt="הכירו את BISS Studio באינסטגרם" style={{width:"100%",borderRadius:20,marginBlock:16}}/></a>
+      {terms.recurring&&<div><strong>שעות קבועות ותקופת התחייבות</strong><p style={{whiteSpace:"pre-wrap"}}>{terms.recurring}</p><p className="small">המועדים להלן הם המועדים הנוכחיים להגשת מועמדות; יתר הסדרה בתיאום ואישור הסטודיו.</p></div>}
       {terms.certifications&&<div><strong>הסמכות נדרשות</strong><p style={{whiteSpace:"pre-wrap"}}>{terms.certifications}</p></div>}
       {terms.experience&&<div><strong>ניסיון נדרש</strong><p style={{whiteSpace:"pre-wrap"}}>{terms.experience}</p></div>}
       {terms.notes&&<div><strong>הערות כלליות</strong><p style={{whiteSpace:"pre-wrap"}}>{terms.notes}</p></div>}
@@ -113,7 +115,11 @@ export default function RecruitmentPage() {
           <label className="field">מייל<input name="email" type="email" autoComplete="email" maxLength={180} required/></label>
           <label className="field">טלפון<input name="phone" type="tel" autoComplete="tel" maxLength={35}/></label>
           <label className="field">סוג ההסמכה שלך<textarea name="qualifications" maxLength={800} required/></label>
-          <label className="field">צירוף תעודת הסמכה (אופציונלי)<input name="certificate" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"/><span className="small">PDF, JPG או PNG עד 3 MB</span></label>
+          <label className="field">תעודת הסמכה {terms.requireCertificate?"(חובה)":"(אופציונלי)"}<input name="certificate" type="file" required={terms.requireCertificate} accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"/><span className="small">PDF, JPG או PNG; שני המסמכים יחד עד 3 MB</span></label>
+          {terms.documentPolicy===1&&<>
+            <label className="field">מסמך ביטוח אחריות מקצועית {terms.requireInsurance?"(חובה)":"(אופציונלי)"}<input name="insurance" type="file" required={terms.requireInsurance} accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"/><span className="small">PDF, JPG או PNG; שני המסמכים יחד עד 3 MB. זמין רק למנהלי Studio.</span></label>
+            <label className="field">תוקף ביטוח עד<input name="insuranceValidUntil" type="date" required/></label>
+          </>}
           <label className="field">ניסיון מקצועי<textarea name="experience" maxLength={600} required={Boolean(terms.experience)}/></label>
           <label className="field">הערות<textarea name="note" maxLength={900}/></label>
           <input name="website" hidden autoComplete="off" tabIndex={-1}/>

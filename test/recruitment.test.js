@@ -1,6 +1,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {recruitmentApprovalError,recruitmentPay,recruitmentPublic,recruitmentWorkoutFields,shekelsToAgorot} from "../lib/recruitment.js";
+import {recruitmentAd,recruitmentApprovalError,recruitmentDocumentError,recruitmentPay,recruitmentPublic,recruitmentWorkoutFields,shekelsToAgorot} from "../lib/recruitment.js";
+
+test("document policy enforces files, real expiry dates, Israel lesson date and manager review",()=>{
+  const terms={documentPolicy:1,requireInsurance:true,requireCertificate:true,slots:[{id:"a",startsAt:"2026-11-22T23:30:00Z"}]};
+  const app={professional_insurance:true,qualifications:"פילאטיס",insurance_mime:"application/pdf",certificate_mime:"image/png",insurance_valid_until:"2026-11-22",requested_ids:["a"]};
+  assert.match(recruitmentApprovalError(app,terms),/אינו בתוקף/);
+  app.insurance_valid_until="2026-11-23";
+  assert.match(recruitmentApprovalError(app,terms),/בדיקת מסמכים/);
+  app.documents_reviewed_at="2026-11-19T12:00:00Z";
+  assert.equal(recruitmentApprovalError(app,terms),"");
+  assert.match(recruitmentDocumentError({...app,insurance_valid_until:"2027-02-30"},terms),/תאריך/);
+  assert.match(recruitmentDocumentError({...app,insurance_mime:null},terms),/מסמך ביטוח/);
+  assert.match(recruitmentDocumentError({...app,certificate_mime:null},terms),/תעודת/);
+});
+
+test("ad includes pay, travel, recurrence and conditions without applicant or original instructor data",()=>{
+  const ad=recruitmentAd({title:"פילאטיס",recurring:"ימי ראשון",slots:[{title:"פילאטיס",startsAt:"2026-11-22T07:15:00Z",pay:15000,originalInstructorName:"private"}],travelSingle:3000,travelMultiple:5000,address:"כתובת בדיקה",requireInsurance:true,requireCertificate:true},"https://biss-studio.vercel.app/recruit/demo");
+  assert.match(ad,/ימי ראשון/);assert.match(ad,/150/);assert.match(ad,/ביטוח/);assert.match(ad,/תעודת/);assert.doesNotMatch(ad,/private/);
+});
 
 test("recruitment approval requires both a declaration and a qualification",()=>{
   assert.match(recruitmentApprovalError({professional_insurance:false,qualifications:"הדרכת כושר"}),/ביטוח/);

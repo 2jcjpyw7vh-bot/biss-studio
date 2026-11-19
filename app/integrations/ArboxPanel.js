@@ -4,6 +4,7 @@ import {studioAdminHeaders} from "../../lib/studio-admin-client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "../../lib/supabase-browser";
+import ArboxRecruitment from "./ArboxRecruitment";
 import WorkoutTaskForm from "./WorkoutTaskForm";
 
 const displayDate = value => new Intl.DateTimeFormat("he-IL", {timeZone:"UTC",day:"numeric",month:"numeric"}).format(new Date(`${value}T00:00:00Z`));
@@ -151,6 +152,7 @@ export default function ArboxPanel() {
             <div className={lesson.instructorName?"small":"notice"}>{lesson.instructorName?`מדריכה: ${lesson.instructorName}${lesson.secondInstructorName?` · ${lesson.secondInstructorName}`:""}`:"מדריכה לא משובצת"}</div>
             <div className="small">{lesson.capacity!==null && `קיבולת ${lesson.capacity}`}{lesson.capacity!==null && lesson.registrations!==null && " · "}{lesson.registrations!==null && `נרשמו ${lesson.registrations}`}</div>
             {!lesson.cancelled&&lesson.scheduleId&&<button className="btn" onClick={()=>setSelectedLesson(selectedLesson===lesson.scheduleId?"":lesson.scheduleId)}>בקשת בניית אימון</button>}
+            {!lesson.cancelled&&lesson.scheduleId&&!lesson.instructorName&&!lesson.secondInstructorName&&<ArboxRecruitment lesson={lesson}/>}
             {selectedLesson&&selectedLesson===lesson.scheduleId&&<WorkoutTaskForm key={lesson.scheduleId} lesson={lesson} token={scheduleToken}/>}
           </article>)}
         </>}
