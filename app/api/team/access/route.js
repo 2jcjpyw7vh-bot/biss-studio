@@ -47,6 +47,7 @@ export async function POST(req) {
   const base=process.env.NEXT_PUBLIC_SITE_URL;
   if(!base)return reply({error:"כתובת Studio חסרה בהגדרות הפרויקט."},503);
   const url=new URL("/login",base);
+  url.searchParams.set("account",person.id);
   url.searchParams.set("next",visit?`visit:${visit.id}`:activity?`activity:${activity.id}`:task?`build-task:${task.id}`:person.role==="trainee"?"my-visits":person.role==="operator"?"operations":"my-sessions");
   if(body.channel==="email"){
     const {error:mailError}=await db.auth.signInWithOtp({email:person.email,options:{shouldCreateUser:true,emailRedirectTo:url.href}});

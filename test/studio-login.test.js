@@ -1,6 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loginDestination, loginTarget,loginEntryDestination } from "../lib/studio-login.js";
+import { existingLoginAction,loginDestination, loginTarget,loginEntryDestination } from "../lib/studio-login.js";
+
+test('saved verified sessions are reused; another account or explicit switch never silently replaces them',()=>{
+ assert.equal(existingLoginAction('instructor','instructor'),'reuse');
+ assert.equal(existingLoginAction('instructor',null),'reuse');
+ assert.equal(existingLoginAction('manager','instructor'),'other-account');
+ assert.equal(existingLoginAction('instructor','instructor',true),'choose');
+ assert.equal(existingLoginAction(null,'instructor'),'authenticate');
+ assert.equal(existingLoginAction('instructor','https://evil.example'),'other-account');
+});
 
 test("Arbox resumes only for a manager and keeps the destination within Studio", () => {
   assert.equal(loginDestination(loginTarget("arbox"), "manager"), "/?tab=integrations");

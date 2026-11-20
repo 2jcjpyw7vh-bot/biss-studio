@@ -3,7 +3,7 @@ import StudioSocialLinks from "../StudioSocialLinks";
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {supabaseBrowser} from "../../lib/supabase-browser";
-import {loginEntryDestination, loginTarget} from "../../lib/studio-login";
+import {existingLoginAction,loginEntryDestination, loginTarget} from "../../lib/studio-login";
 
 const roleLabels={manager:"מנהלת",instructor:"מדריכה",trainee:"לקוח/ה",operator:"מתפעל/ת"};
 
@@ -32,9 +32,11 @@ export default function LoginPage() {
   const [showCode,setShowCode] = useState(false);
   const [tokenHash,setTokenHash] = useState("");
   const [next,setNext] = useState("");
+  const [checkFailed,setCheckFailed] = useState(false);
+  const [checkAttempt,setCheckAttempt] = useState(0);
 
-  async function finish(session, target) {
-    const user = await studioProfile(session);
+  async function finish(session, target, verifiedUser) {
+    const user = verifiedUser || await studioProfile(session);
     const destination = loginEntryDestination(target,user.role);
     if (destination) {
       window.location.replace(destination);
@@ -47,6 +49,9 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
+    let active=true;
+    setChecking(true);
+    setCheckFailed(false);
     const url = new URL(window.location.href);
     const target = loginTarget(url.searchParams.get("next"));
     const fragment = new URLSearchParams(url.hash.slice(1));
@@ -57,8 +62,6 @@ export default function LoginPage() {
       window.history.replaceState(null, "", url.pathname + url.search);
       if (/^[A-Za-z0-9_-]{20,200}$/.test(hash)) setTokenHash(hash);
       else setMessage("קישור הכניסה אינו תקף. אפשר להשתמש בקוד מהמייל או לבקש הודעה חדשה.");
-      setChecking(false);
-      return;
     }
     if (fragment.has("error") || url.searchParams.has("error")) {
       setMessage("קישור הכניסה פג או כבר נפתח. הזיני את הקוד מהמייל אם הוא עדיין בתוקף, או בקשי הודעה חדשה.");
@@ -66,18 +69,24 @@ export default function LoginPage() {
     }
     async function check() {
       const {data,error} = await client.auth.getSession();
+      if(!active)return;
       if (error) throw error;
       if (data.session) {
         setBlocked(true);
-        if (url.searchParams.get("switch") === "1") {
-          setProfile(await studioProfile(data.session));
+        const user=await studioProfile(data.session);
+        if(!active)return;
+        const action=existingLoginAction(user.id,url.searchParams.get('account'),url.searchParams.get('switch')==='1');
+        if (action !== 'reuse') {
+          setProfile(user);
           setAccessToken(data.session.access_token);
-          setMessage("כדי לפתוח משימה ששויכה לחשבון אחר, לחצי על יציאה והחלפת חשבון והיכנסי במייל שאליו נשלחה הבקשה.");
-        } else await finish(data.session, target);
+          setMessage(action==='other-account'?"הקישור נשלח לחשבון אחר. החיבור הנוכחי נשמר; כדי לעבור אליו השתמשי בקישור האישי או בהחלפת חשבון.":"את מחוברת כבר. אפשר להמשיך בחשבון הזה או לבחור יציאה והחלפת חשבון.");
+          if(action==='other-account'&&hash)setBlocked(false);
+        } else await finish(data.session, target,user);
       }
     }
-    check().catch(error => setMessage(error.message || "לא ניתן לבדוק את הכניסה.")).finally(() => setChecking(false));
-  }, [client]);
+    check().catch(error => {if(active){setCheckFailed(true);setMessage(error.message || "לא ניתן לבדוק את הכניסה כרגע. החיבור השמור לא נמחק.");}}).finally(() => {if(active)setChecking(false);});
+    return()=>{active=false;};
+  }, [client,checkAttempt]);
 
   async function sendLink(event) {
     event.preventDefault();
@@ -159,14 +168,15 @@ export default function LoginPage() {
   return <main className="shell auth-shell"><section className="panel auth-card">
     <div className="eyebrow">BISS STUDIO · כניסה אישית</div>
     <h1>{next==="account"?"הגדרות החשבון":next === "arbox" ? "כניסת מנהלת ללוח Arbox" : "כניסה אישית ל־BISS Studio"}</h1>
-    {!profile&&<p className="sub">כניסה עם המייל הרשום בסטודיו. החיבור נשמר במכשיר הזה גם לביקור הבא.</p>}
+    {!profile&&<p className="sub">כניסה חד־פעמית עם המייל הרשום בסטודיו. החיבור נשמר בדפדפן הזה ומתחדש אוטומטית כל עוד הוא תקף.</p>}
     {!client && <div className="notice">שירות הכניסה של BISS Studio אינו זמין כרגע.</div>}
     {client && checking && <p role="status">בודק כניסה קיימת…</p>}
-    {client && !checking && !blocked && tokenHash && <div className="safe">
+    {client && !checking && checkFailed && <button className="btn primary" onClick={()=>setCheckAttempt(n=>n+1)}>בדיקה חוזרת של החיבור השמור</button>}
+    {client && !checking && !checkFailed && !blocked && tokenHash && <div className="safe">
       <button className="btn primary" disabled={busy} onClick={() => verify({token_hash:tokenHash})}>אישור כניסה ל־BISS Studio</button>
       <button className="btn" disabled={busy} onClick={() => {setTokenHash("");setShowCode(true);}}>כניסה עם קוד</button>
     </div>}
-    {client && !checking && !blocked && !tokenHash && <>
+    {client && !checking && !checkFailed && !blocked && !tokenHash && <>
       <form onSubmit={sendLink}>
         <label className="field">כתובת המייל הרשומה<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/></label>
         <button className="btn primary" disabled={busy}>{showCode?"שליחת הודעת כניסה חדשה":"שליחת הודעת כניסה"}</button>
@@ -177,6 +187,7 @@ export default function LoginPage() {
         <button className="btn primary" disabled={busy || !email || code.length < 6}>אימות קוד וכניסה</button>
       </form>}
     </>}
+    {!profile&&!checking&&<p className="small">באייפון מומלץ לפתוח תמיד ב־Safari באותו דפדפן, או לשמור קיצור למסך הבית. דפדפן פנימי של וואטסאפ, גלישה פרטית או מחיקת נתוני האתר עשויים לדרוש כניסה נפרדת.</p>}
     {profile && <div className="safe"><strong>שלום {profile.full_name}</strong><p>תפקיד: {roleLabels[profile.role] || profile.role}</p>
       {profile.role!=='trainee'&&<Link className="btn primary" href="/my-visits">כניסה לאזור שלי כלקוח</Link>}
       {profile.role === "operator" ? <Link className="btn primary" href="/operations">הפעילויות שלי</Link> : profile.role === "trainee" ? <Link className="btn primary" href="/my-visits">הביקורים שלי</Link> : <Link className="btn primary" href="/my-sessions">האימונים שלי</Link>}
