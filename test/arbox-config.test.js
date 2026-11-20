@@ -39,7 +39,7 @@ test("Arbox weekly preview requests aggregate registrations and excludes persona
  const now=new Date("2026-11-10T23:00:00Z");
  const result=await readArboxSchedule({ARBOX_API_KEY:"test-only"},async(url,options)=>{
   const request=new URL(url);
-  assert.equal(request.href,"https://arboxserver.arboxapp.com/api/public/v3/schedule?from_date=2026-11-11&to_date=2026-11-17&limit=20&sort=asc&registration_count=1&registration_details=0");
+  assert.equal(request.href,"https://arboxserver.arboxapp.com/api/public/v3/schedule?from_date=2026-11-11&to_date=2026-11-17&limit=20&sort=asc&registration_count=1&registration_details=0&transparent=1");
   assert.equal(options.redirect,"error");
   return Response.json({data:[
    {date:"2026-11-12",start_time:"18:00:00",end_time:"18:50",schedule_id:123,session_name:"Barre",location_name:"Studio",max_participants:"7",registration_count:"0",cancelled_status:"1",staff_member:"private",registration_details:[{name:"private"}]},
@@ -72,7 +72,7 @@ test("transparent activity probe uses the documented filter and never requests o
   assert.equal(params.get("limit"),"500");
   assert.equal(params.get("registration_details"),"0");
   return Response.json({data:[{schedule_id:12,date:"2026-11-22",start_time:"12:00",end_time:"13:00",session_name:"DJ",email:"private@example.test",registration_details:[{phone:"private"}]}]});
- },new Date("2026-11-20T09:00:00Z"),{transparent:true});
+ },new Date("2026-11-20T09:00:00Z"),{transparent:true,expanded:true});
  assert.equal(result.lessons[0].name,"DJ");
  assert.equal(JSON.stringify(result).includes("private"),false);
 });

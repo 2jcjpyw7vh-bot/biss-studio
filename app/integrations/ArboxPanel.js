@@ -8,6 +8,7 @@ import ArboxRecruitment from "./ArboxRecruitment";
 import WorkoutTaskForm from "./WorkoutTaskForm";
 
 const displayDate = value => new Intl.DateTimeFormat("he-IL", {timeZone:"UTC",day:"numeric",month:"numeric"}).format(new Date(`${value}T00:00:00Z`));
+const isHourlyActivity=lesson=>/\bDJs?\b|אימון\s+עצמאי|פעילות\s+שעתית/i.test(lesson.name||"");
 const matchLabels = {
   linked:"מקושר ל־Studio",
   linked_time_changed:"מקושר · המועד שונה ב־Studio",
@@ -128,7 +129,7 @@ export default function ArboxPanel() {
     </div>
     <section className="continuity-list" aria-labelledby="arbox-schedule-title">
       <h3 id="arbox-schedule-title">תצוגה מקדימה של לוח השבוע</h3>
-      <p className="small">עד 20 שיעורים מהיום ובששת הימים הבאים. מוצגים פרטי השיעור ומספר הרשמות, ככל שארבוקס מספקת אותו.</p>
+      <p className="small">עד 20 שיעורים ופעילויות מהיום ובששת הימים הבאים, כולל פגישות אישיות. מוצגים מועד, צוות ומספר הרשמות, ככל שארבוקס מספקת אותם.</p>
       <div className="row">
         <button className="btn primary" disabled={loadingSchedule} onClick={()=>loadSchedule()}>{loadingSchedule ? "טוען לוח…" : "הצגת לוח השבוע"}</button>
         {isManager&&<button className="btn" disabled={loadingSchedule} onClick={()=>loadSchedule(true)}>בדיקת פגישות ופעילויות נוספות</button>}
@@ -153,9 +154,10 @@ export default function ArboxPanel() {
             <div className="small">{displayDate(lesson.date)} · <bdi>{lesson.start}{lesson.end ? `–${lesson.end}` : ""}</bdi>{lesson.location && ` · ${lesson.location}`}</div>
             <div className={lesson.instructorName||lesson.secondInstructorName?"small":"notice"}>{lesson.instructorName||lesson.secondInstructorName?`מדריכה: ${[lesson.instructorName,lesson.secondInstructorName].filter(Boolean).join(" · ")}`:"מדריכה לא משובצת"}</div>
             <div className="small">{lesson.capacity!==null && `קיבולת ${lesson.capacity}`}{lesson.capacity!==null && lesson.registrations!==null && " · "}{lesson.registrations!==null && `נרשמו ${lesson.registrations}`}</div>
-            {!schedule.transparentRequested&&!lesson.cancelled&&lesson.scheduleId&&<button className="btn" onClick={()=>setSelectedLesson(selectedLesson===lesson.scheduleId?"":lesson.scheduleId)}>בקשת בניית אימון</button>}
-            {!schedule.transparentRequested&&!lesson.cancelled&&lesson.scheduleId&&!lesson.instructorName&&!lesson.secondInstructorName&&<ArboxRecruitment lesson={lesson}/>}
-            {!schedule.transparentRequested&&selectedLesson&&selectedLesson===lesson.scheduleId&&<WorkoutTaskForm key={lesson.scheduleId} lesson={lesson} token={scheduleToken}/>}
+            {isHourlyActivity(lesson)&&<p className="notice">פעילות עצמאית · נתוני תשלום ותוספות ציוד אינם מאומתים בתצוגת היומן. שיוך משימת הכנה וגיוס מתפעל לפעילות עדיין אינם זמינים ב־Studio.</p>}
+            {!schedule.transparentRequested&&!isHourlyActivity(lesson)&&!lesson.cancelled&&lesson.scheduleId&&<button className="btn" onClick={()=>setSelectedLesson(selectedLesson===lesson.scheduleId?"":lesson.scheduleId)}>בקשת בניית אימון</button>}
+            {!schedule.transparentRequested&&!isHourlyActivity(lesson)&&!lesson.cancelled&&lesson.scheduleId&&!lesson.instructorName&&!lesson.secondInstructorName&&<ArboxRecruitment lesson={lesson}/>}
+            {!schedule.transparentRequested&&!isHourlyActivity(lesson)&&selectedLesson&&selectedLesson===lesson.scheduleId&&<WorkoutTaskForm key={lesson.scheduleId} lesson={lesson} token={scheduleToken}/>}
           </article>)}
         </>}
       </div>
