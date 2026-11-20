@@ -19,7 +19,7 @@ test('minor enrollment requires own registration, health check, introduction and
  assert.equal(participantTrainingReady({...complete,health_verified:false}),false);
  assert.equal(participantTrainingReady({...complete,arbox_verified:false}),false);
  assert.equal(participantTrainingReady(complete),true);
- assert.equal(participantTrainingReady({...complete,age_band:'adult',guardian_verified:false}),true);
+ assert.equal(participantTrainingReady({...complete,age_band:'adult',guardian_verified:false}),false);
 });
 test('invitation never infers registration, health completion or introduction from payment',()=>{
  assert.deepEqual(participantChecklist({status:'accepted',paid:true}),{registration:false,health:false,introduction:false});
