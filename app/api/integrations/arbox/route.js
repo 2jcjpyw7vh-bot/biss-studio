@@ -36,7 +36,7 @@ export async function GET(req){
   if(access.error)return reply({error:access.error},access.status);
   if(access.profile.role!=="manager")return reply({error:"תצוגת הלוח זמינה למנהלות Studio בלבד."},403);
   const transparent=new URL(req.url).searchParams.get("includeTransparent")==="1";
-  const result=await readArboxSchedule(process.env,fetch,new Date(),{transparent});
+  const result=await readArboxSchedule(process.env,fetch,new Date(),{transparent:true,expanded:transparent});
   if(result.error==="not_configured")return reply({error:"נדרש מפתח API פעיל בשרת Studio לפני הצגת הלוח."},503);
   if(result.error==="access_denied")return reply({error:"ארבוקס דחתה את הגישה ללוח. יש לבדוק את המפתח ואת הרשאותיו."},502);
   if(result.error)return reply({error:"לא ניתן לקרוא כרגע את לוח השיעורים מארבוקס."},502);
