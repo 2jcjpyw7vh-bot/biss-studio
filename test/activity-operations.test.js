@@ -40,6 +40,9 @@ test('classification is only a suggestion, ordinary fitness remains class',()=>{
  assert.equal(suggestedActivityKind('אימון עצמאי זוגי'),'self_workout');
  assert.equal(suggestedActivityKind('השכרת חלל'),'hourly');
  assert.equal(suggestedActivityKind('פילאטיס מזרן'),'class');
+ assert.equal(suggestedActivityKind('מפגש התאמה אישי לאימון עצמאי'),'class');
+ assert.equal(suggestedActivityKind('  מפגש   היכרות אישי לאימון עצמאי '),'class');
+ assert.equal(suggestedActivityKind('אימון עצמאי לאחר מפגש התאמה'),'self_workout');
 });
 
 test('booking terms require manager verification and current unique catalog items',()=>{
