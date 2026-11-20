@@ -64,3 +64,15 @@ test("Arbox weekly preview distinguishes missing credentials, a rejected request
  assert.deepEqual(await readArboxSchedule(env,async()=>Response.json({unexpected:[]})),{error:"unexpected_response"});
  assert.deepEqual((await readArboxSchedule(env,async()=>new Response(null,{status:204}))).lessons,[]);
 });
+
+test("transparent activity probe uses the documented filter and never requests or returns client details",async()=>{
+ const result=await readArboxSchedule({ARBOX_API_KEY:"test-only"},async url=>{
+  const params=new URL(url).searchParams;
+  assert.equal(params.get("transparent"),"1");
+  assert.equal(params.get("limit"),"500");
+  assert.equal(params.get("registration_details"),"0");
+  return Response.json({data:[{schedule_id:12,date:"2026-11-22",start_time:"12:00",end_time:"13:00",session_name:"DJ",email:"private@example.test",registration_details:[{phone:"private"}]}]});
+ },new Date("2026-11-20T09:00:00Z"),{transparent:true});
+ assert.equal(result.lessons[0].name,"DJ");
+ assert.equal(JSON.stringify(result).includes("private"),false);
+});

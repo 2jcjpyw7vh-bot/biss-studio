@@ -58,7 +58,7 @@ export default function ArboxPanel() {
     }
   };
 
-  const loadSchedule = useCallback(async () => {
+  const loadSchedule = useCallback(async (includeTransparent=false) => {
     setLoadingSchedule(true);
     setSchedule(null);
     setSelectedLesson("");
@@ -73,7 +73,7 @@ export default function ArboxPanel() {
         setScheduleError("יש להיכנס עם החשבון האישי של מנהלת Studio.");
         return;
       }
-      const response = await fetch("/api/integrations/arbox?view=schedule", {
+      const response = await fetch(`/api/integrations/arbox?view=schedule${includeTransparent?"&includeTransparent=1":""}`, {
         headers: {Authorization:`Bearer ${token}`},
         cache: "no-store",
       });
@@ -130,17 +130,19 @@ export default function ArboxPanel() {
       <h3 id="arbox-schedule-title">תצוגה מקדימה של לוח השבוע</h3>
       <p className="small">עד 20 שיעורים מהיום ובששת הימים הבאים. מוצגים פרטי השיעור ומספר הרשמות, ככל שארבוקס מספקת אותו.</p>
       <div className="row">
-        <button className="btn primary" disabled={loadingSchedule} onClick={loadSchedule}>{loadingSchedule ? "טוען לוח…" : "הצגת לוח השבוע"}</button>
+        <button className="btn primary" disabled={loadingSchedule} onClick={()=>loadSchedule()}>{loadingSchedule ? "טוען לוח…" : "הצגת לוח השבוע"}</button>
+        {isManager&&<button className="btn" disabled={loadingSchedule} onClick={()=>loadSchedule(true)}>בדיקת פגישות ופעילויות נוספות</button>}
         {needsLogin && <Link className="btn" href="/login?next=arbox">כניסת מנהלת ללוח Arbox</Link>}
       </div>
       <div role="status">
         {scheduleError && <p className="notice">{scheduleError}</p>}
         {schedule && <>
           <p className="small">{displayDate(schedule.from)}–{displayDate(schedule.to)} · {schedule.lessons.length} שיעורים בתצוגה</p>
+          {schedule.transparentRequested&&<p className="notice">תצוגת בדיקה דרך המסנן הרשמי לרשומות שקופות בארבוקס. אין בתצוגה אישור תשלום או ייבוא פעילות. אם ההזמנה אינה מופיעה, אין ליצור עבורה אימון חלופי; יש לבדוק את קליטת הפגישות.</p>}
           {schedule.comparisonUnavailable
             ? <p className="notice">הלוח נטען, אך לא היה אפשר להשוות אותו לאימוני Studio.</p>
             : schedule.lessons.length>0&&<p className="small">השוואה ל־Studio לפי מזהה קיים, או שם ומועד. התאמה אפשרית דורשת בדיקה.</p>}
-          {schedule.limited && <p className="small">ייתכן שיש שיעורים נוספים בטווח. מוצגות עד 20 רשומות.</p>}
+          {schedule.limited && <p className="small">ייתכן שיש שיעורים נוספים בטווח. מוצגות עד {schedule.transparentRequested?500:20} רשומות.</p>}
           {schedule.skipped>0 && <p className="notice">חלק מהרשומות חסרות מועד תקין ולכן הושמטו.</p>}
           {schedule.lessons.length===0 && schedule.skipped===0 && <p>לא נמצאו שיעורים בטווח הזה.</p>}
           {schedule.lessons.map((lesson,index)=><article className="card" key={index}>
@@ -151,9 +153,9 @@ export default function ArboxPanel() {
             <div className="small">{displayDate(lesson.date)} · <bdi>{lesson.start}{lesson.end ? `–${lesson.end}` : ""}</bdi>{lesson.location && ` · ${lesson.location}`}</div>
             <div className={lesson.instructorName||lesson.secondInstructorName?"small":"notice"}>{lesson.instructorName||lesson.secondInstructorName?`מדריכה: ${[lesson.instructorName,lesson.secondInstructorName].filter(Boolean).join(" · ")}`:"מדריכה לא משובצת"}</div>
             <div className="small">{lesson.capacity!==null && `קיבולת ${lesson.capacity}`}{lesson.capacity!==null && lesson.registrations!==null && " · "}{lesson.registrations!==null && `נרשמו ${lesson.registrations}`}</div>
-            {!lesson.cancelled&&lesson.scheduleId&&<button className="btn" onClick={()=>setSelectedLesson(selectedLesson===lesson.scheduleId?"":lesson.scheduleId)}>בקשת בניית אימון</button>}
-            {!lesson.cancelled&&lesson.scheduleId&&!lesson.instructorName&&!lesson.secondInstructorName&&<ArboxRecruitment lesson={lesson}/>}
-            {selectedLesson&&selectedLesson===lesson.scheduleId&&<WorkoutTaskForm key={lesson.scheduleId} lesson={lesson} token={scheduleToken}/>}
+            {!schedule.transparentRequested&&!lesson.cancelled&&lesson.scheduleId&&<button className="btn" onClick={()=>setSelectedLesson(selectedLesson===lesson.scheduleId?"":lesson.scheduleId)}>בקשת בניית אימון</button>}
+            {!schedule.transparentRequested&&!lesson.cancelled&&lesson.scheduleId&&!lesson.instructorName&&!lesson.secondInstructorName&&<ArboxRecruitment lesson={lesson}/>}
+            {!schedule.transparentRequested&&selectedLesson&&selectedLesson===lesson.scheduleId&&<WorkoutTaskForm key={lesson.scheduleId} lesson={lesson} token={scheduleToken}/>}
           </article>)}
         </>}
       </div>
