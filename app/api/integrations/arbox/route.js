@@ -40,7 +40,10 @@ export async function GET(req){
   if(result.error==="not_configured")return reply({error:"נדרש מפתח API פעיל בשרת Studio לפני הצגת הלוח."},503);
   if(result.error==="access_denied")return reply({error:"ארבוקס דחתה את הגישה ללוח. יש לבדוק את המפתח ואת הרשאותיו."},502);
   if(result.error)return reply({error:"לא ניתן לקרוא כרגע את לוח השיעורים מארבוקס."},502);
-  return reply({...await compareSchedule(db,result),transparentRequested:transparent});
+  const compared=await compareSchedule(db,result);
+  const ids=result.lessons.map(lesson=>lesson.scheduleId).filter(Boolean);
+  const activities=ids.length?await db.from('biss_activity_jobs').select('id,arbox_schedule_id,status').in('arbox_schedule_id',ids):{data:[]};
+  return reply({...compared,lessons:compared.lessons.map(lesson=>{const job=activities.data?.find(job=>job.arbox_schedule_id===lesson.scheduleId);return job?{...lesson,activityId:job.id,activityStatus:job.status}:lesson;}),activityLookupUnavailable:Boolean(activities.error),transparentRequested:transparent});
  }
  if(!await verifyAdminPin(req))return reply({error:"נדרש PIN מנהל"},401);
  const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);
