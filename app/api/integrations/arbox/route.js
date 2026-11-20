@@ -35,11 +35,12 @@ export async function GET(req){
   const access=await studioProfileFromRequest(req,db);
   if(access.error)return reply({error:access.error},access.status);
   if(access.profile.role!=="manager")return reply({error:"תצוגת הלוח זמינה למנהלות Studio בלבד."},403);
-  const result=await readArboxSchedule();
+  const transparent=new URL(req.url).searchParams.get("includeTransparent")==="1";
+  const result=await readArboxSchedule(process.env,fetch,new Date(),{transparent});
   if(result.error==="not_configured")return reply({error:"נדרש מפתח API פעיל בשרת Studio לפני הצגת הלוח."},503);
   if(result.error==="access_denied")return reply({error:"ארבוקס דחתה את הגישה ללוח. יש לבדוק את המפתח ואת הרשאותיו."},502);
   if(result.error)return reply({error:"לא ניתן לקרוא כרגע את לוח השיעורים מארבוקס."},502);
-  return reply(await compareSchedule(db,result));
+  return reply({...await compareSchedule(db,result),transparentRequested:transparent});
  }
  if(!await verifyAdminPin(req))return reply({error:"נדרש PIN מנהל"},401);
  const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);
@@ -52,3 +53,5 @@ export async function GET(req){
  const connection=await checkArboxConnection();
  return reply({configuration:arboxConfiguration(),connection,mappings:{groups:groupCount.count||0,users:userCount.count||0,sessions:sessionCount.count||0},mode:"read_only_check",writes_enabled:false});
 }
+
+
