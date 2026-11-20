@@ -43,3 +43,5 @@
 - `reports/visit-work/schema.sql` — full visit schema for fresh recovery; do not rerun blindly against the migrated project.
 - `reports/visit-work/activity-migration.sql` — incremental activity selection migration already applied to Studio.
 - `reports/visit-work/database-qa.sql` — rollback-only live database authorization, idempotency and overlap checks.
+
+- `reports/Visit-Save-Fix-2026-11-19.md` — סיבת כפתור שמירה מושבת ללא לקוחות, הוספה באותו מסך ובדיקת שימור פרטי הביקור ושמירה חיה.
