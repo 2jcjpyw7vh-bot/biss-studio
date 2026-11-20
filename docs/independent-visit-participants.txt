@@ -1,0 +1,17 @@
+BISS Studio — additional participants in independent visits
+
+Scope: biss_visits only; no changes to regular instructor-led classes, Vineyard, Arbox payments or global connections.
+Purchaser opens My visits -> Participants -> adds name and email or WhatsApp phone. Seats are bounded by the manager-confirmed party_size, including the purchaser. No new payment is taken. One participant does not inherit another's training permissions.
+
+Email-known route: limited invited trainee contact (or existing account without role change), OTP mail, recipient signs into their own account and accepts the invitation in My visits.
+Phone-first route: personal WhatsApp invitation prepared for sender confirmation, hashed expiring token, recipient enters their own email, verifies it through the existing OTP flow, then explicitly accepts. Token is consumed on acceptance. Public landing omits purchaser preferences and financial details. Email and link requests are throttled.
+
+Under-18/unknown age: staff age/guardian-route review remains required. Arbox registration and the actual health declaration are completed and verified in Arbox. A manager records exact customer ID and verified milestones; no automatic declaration signature or equipment permission. Own approved trainer program is still required. The server blocks independent workout launch for an accepted guest of a future workout visit while registration, health, introduction or required guardian review are incomplete.
+
+Current Arbox check: no extra-participant invitation field found in the current pilot appointment checkout. Public shop offers login identification; no documented purchase-linked guest-invitation API found in downloaded official OpenAPI. This does not establish that all Arbox products lack such a feature. Studio is the implemented fallback. Arbox record creation/health completion is NOT automatically performed by this code.
+
+Current scope is per scheduled visit. Multi-visit series propagation and automatic purchase ingestion remain separate work. A six-visit product must have its dates/party sizes linked and verified before sending real participant invitations. Purchaser is counted as one attending person in this version; non-attending gift purchasers require a separate future model.
+
+Database: isolated Studio nqpxgxoxxafsrmvfrqnh. RLS with client grants revoked; server-role authenticated routes. Deployed incremental migrations: studio_visit_participants, studio_participant_phone_invites, studio_participant_guardian_review. Canonical bootstrap schema is supabase/studio-visit-participants.sql (includes phone route); do not rerun on installed database. Incremental historical phone SQL is local reference only. DB rollback tests in supabase/tests. No identity-number field is collected or needed for the invitation.
+
+Live recipient testing: do not send an invitation tied to a single-person booking to simulate a joint booking. Use a genuinely eligible two-place visit or isolated transactional fixtures. Do not claim delivery, OTP acceptance, Arbox signup or on-site training without observing each.

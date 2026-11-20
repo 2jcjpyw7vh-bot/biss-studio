@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {studioProfileFromRequest} from "../../../lib/studio-auth";
 import {loadCurrentProgram,nextSessionIndex,selfServiceAccess} from "../../../lib/self-service-access";
+import {participantTrainingGate} from "../../../lib/visit-participants";
 
 export const dynamic="force-dynamic";
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
@@ -17,7 +18,9 @@ export async function GET(req) {
  const {data:program,error:programError}=await loadCurrentProgram(db,profile.id,now);
  if(programError)return reply({error:"לא ניתן לטעון את התוכנית"},503);
 
- const access=selfServiceAccess(profile,program,now);
+ const gate=await participantTrainingGate(db,profile.id,now);
+ if(gate.error)return reply({error:"לא ניתן לבדוק את השלמת הקליטה"},503);
+ const access=gate.pending?{mode:"onboarding_pending",equipment:false}:selfServiceAccess(profile,program,now);
  let completed=[];
  if(access.equipment){
   const {data:runs,error:runsError}=await db.from("biss_training_runs").select("session_index")
@@ -31,6 +34,6 @@ export async function GET(req) {
   access,
   program:access.equipment?program:null,
   progress:{completed_sessions:completed,next_session_index:nextSessionIndex(sessions.length,completed)},
-  alternatives:[{id:"mat-pilates",title:"פילאטיס מזרן"},{id:"gentle-yoga",title:"יוגה עדינה"}]
+  alternatives:gate.pending?[]:[{id:"mat-pilates",title:"פילאטיס מזרן"},{id:"gentle-yoga",title:"יוגה עדינה"}]
  });
 }
