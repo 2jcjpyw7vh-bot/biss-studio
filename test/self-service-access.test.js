@@ -9,6 +9,7 @@ test("direct workout links require the current approved assignment",async()=>{
  const program={id:"current",status:"active",approved_at:"2026-11-10T08:00:00Z",coach_id:"coach",equipment_access:true,program_payload:{sessions:[{name:"אימון"}]}};
  const now=new Date("2026-11-10T22:00:00Z");
  const db={from(table){
+  if(table==='biss_visit_participants')return {select(){return this},eq(){return this},then(resolve){resolve({data:[]});}};
   assert.equal(table,"biss_programs");
   return {
    select(){return this},
@@ -24,6 +25,12 @@ test("direct workout links require the current approved assignment",async()=>{
  assert.equal((await loadCurrentWorkout(db,profile,"current",0,now)).session.name,"אימון");
  program.equipment_access=false;
  assert.equal((await loadCurrentWorkout(db,profile,"current",0,now)).status,403);
+});
+test('a direct workout URL cannot bypass an invited participant missing introduction or health verification',async()=>{
+ const row={visit_id:'visit',arbox_verified:true,health_verified:true,introduction_completed:false,age_band:'minor',guardian_verified:true};
+ const db={from(table){assert.ok(['biss_visit_participants','biss_visits'].includes(table));return {select(){return this},eq(){return this},in(){return this},gt(){return this},then(resolve){resolve({data:table==='biss_visits'?[{id:'visit'}]:[row]});}};}};
+ const result=await loadCurrentWorkout(db,{id:'guest',role:'trainee',status:'active'},'program',0);
+ assert.equal(result.status,403);assert.match(result.error,/מפגש אישי/);
 });
 test("unregistered or inactive people are denied self-service access",()=>{
  assert.equal(selfServiceAccess(null,null).mode,"denied");

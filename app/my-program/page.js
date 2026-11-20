@@ -59,8 +59,8 @@ export default function MyProgramPage(){
    {status.text} {status.kind==="login"&&<Link href="/login">מעבר לכניסה</Link>}
    {status.kind==="retry"&&<button type="button" className="btn" onClick={retry}>ניסיון חוזר</button>}
   </section>}
-  {data&&<><section className="panel"><h2>שלום {data.profile.full_name}</h2>{data.access.equipment?<div className="safe"><strong>שימוש במכשירים מאושר</strong><p>רק במכשירים, במשקלים ובתרגילים שמופיעים בתוכנית שאושרה עבורך.</p></div>:<div className="notice"><strong>ללא אישור שימוש במכשירים</strong><p>ניתן לבחור פילאטיס מזרן או יוגה עדינה בלבד.</p></div>}</section>
-   {!data.access.equipment&&<section className="panel"><h2>אפשרויות בטוחות</h2><div className="grid">{data.alternatives.map(x=><article className="card" key={x.id}><h3>{x.title}</h3><div className="small">אימון עדין ללא שימוש במכשירי הסטודיו.</div></article>)}</div></section>}
+  {data&&<><section className="panel"><h2>שלום {data.profile.full_name}</h2>{data.access.equipment?<div className="safe"><strong>שימוש במכשירים מאושר</strong><p>רק במכשירים, במשקלים ובתרגילים שמופיעים בתוכנית שאושרה עבורך.</p></div>:<div className="notice"><strong>{data.access.mode==="onboarding_pending"?"ממתינים להשלמת הקליטה ומפגש אישי":"ללא אישור שימוש במכשירים"}</strong><p>{data.access.mode==="onboarding_pending"?"לפני אימון עצמאי יש להשלים רישום, בדיקת הצהרת בריאות ומפגש עם מדריכה. במקרה הצורך נדרש גם מסלול הורה. הצטרפות להזמנה אינה מחליפה את האישורים.":"ניתן לבחור פילאטיס מזרן או יוגה עדינה בלבד."}</p></div>}</section>
+   {!data.access.equipment&&data.alternatives.length>0&&<section className="panel"><h2>אפשרויות בטוחות</h2><div className="grid">{data.alternatives.map(x=><article className="card" key={x.id}><h3>{x.title}</h3><div className="small">אימון עדין ללא שימוש במכשירי הסטודיו.</div></article>)}</div></section>}
    {data.program&&<ApprovedSessionPicker program={data.program} progress={data.progress}/>}
    <section className="panel notice">אם מופיעים כאב, סחרחורת, חולשה חריגה או תחושה לא בטוחה — מפסיקים את האימון ופונים לצוות.</section>
   </>}
