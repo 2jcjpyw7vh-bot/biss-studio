@@ -6,6 +6,7 @@ import {studioAdminHeaders} from '../../lib/studio-admin-client';
 import {activityKinds,activityStatuses,activityRoleAllowed} from '../../lib/activity-operations';
 import {visitDay,visitTime} from '../../lib/studio-visits';
 import StaffAccessShare from '../team/StaffAccessShare';
+import ActivityContactCard from '../ActivityContactCard';
 
 export default function ActivityWorkspace(){
  const {user,status}=useStudioSession();
@@ -41,6 +42,7 @@ export default function ActivityWorkspace(){
   <p className="small">המועד וסוג הפעילות נקבעו לפי היומן. שיבוץ האחראי כאן הוא ב־Studio; שינוי איש הצוות בארבוקס נעשה בנפרד.</p>
   <p><strong>אחראי/ת להכנה: </strong>{person(job.assigned_id)?.full_name||(job.assigned_id?'משויך אליך':'טרם שויך')}</p>
   {manager&&<p><strong>לקוח/ה: </strong>{person(job.customer_id)?.full_name||'טרם נבחר'}</p>}
+  {job.customer_contacts?.length>0&&<section><h3>אנשי הקשר של הפעילות</h3><div className="activity-contacts">{job.customer_contacts.map((contact,index)=><ActivityContactCard key={index} contact={contact} visit={job} direction="staff"/>)}</div></section>}
   {job.customer_preferences&&(job.customer_preferences.equipmentRequests||job.customer_preferences.musicUrl)&&<section className="card"><h3>ההכנה של הלקוח לסט</h3><p className="visit-lines">{job.customer_preferences.equipmentRequests}</p>{job.customer_preferences.musicUrl&&<a className="btn" href={job.customer_preferences.musicUrl} target="_blank" rel="noreferrer">פתיחת {job.customer_preferences.musicTitle||'המוזיקה של הלקוח'}</a>}<p className="small">בקשה נוספת אינה משנה את הציוד הכלול או את התשלום. יש לתאם שינוי עם המנהל.</p></section>}
   {job.status!=='cancelled'&&job.status!=='ready'&&manager&&<details className="card" open={!job.assigned_id}><summary>פרטי ההזמנה ושיוך אחראי</summary><form key={`config:${job.id}:${job.revision}`} onSubmit={event=>configure(event,job)} className="visit-manager-form"><fieldset disabled={busy}><div className="filters">
    <label className="field">לקוח/ה רשום/ה<select name="customerId" defaultValue={job.customer_id||''} required><option value="">בחירת לקוח</option>{ready.users.map(person=><option key={person.id} value={person.id}>{person.full_name} · {person.email}</option>)}</select></label>

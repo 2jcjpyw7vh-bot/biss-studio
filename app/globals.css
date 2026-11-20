@@ -745,3 +745,5 @@ input,select,textarea{min-height:46px;border-color:#dce4de;background:#fcfdfc}
 .activity-catalog-item>.permission-check{flex:1;min-width:0}
 .activity-catalog-item>.field{width:70px;flex-shrink:0}
 @media(max-width:600px){.activity-workspace .filters{grid-template-columns:minmax(0,1fr)}.activity-workspace .row>.btn{flex:1 1 100%}.activity-workspace .personal-welcome{display:block}}
+.activity-contact-card{margin-block:14px;min-width:0;overflow-wrap:anywhere}.activity-contact-card .btn{max-width:100%;white-space:normal;box-sizing:border-box}.activity-contacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+@media(max-width:600px){.activity-contact-card .row>.btn{flex:1 1 100%}}

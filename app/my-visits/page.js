@@ -9,6 +9,7 @@ import FarmShopCard from "./FarmShopCard";
 import StudioSocialLinks from "../StudioSocialLinks";
 import VisitParticipants from "./VisitParticipants";
 import MyVisitInvitations from "./MyVisitInvitations";
+import ActivityContactCard from "../ActivityContactCard";
 function VisitCard({visit,preview,onSaved,now,arboxUrl}){
  const [message,setMessage]=useState(""),[busy,setBusy]=useState(false);
  const phase=visitPhase(visit,now),editable=!preview&&!visit.participant_access&&visit.status==="confirmed"&&phase!=="past";
@@ -22,6 +23,7 @@ function VisitCard({visit,preview,onSaved,now,arboxUrl}){
   <div className="row between"><div><span className="eyebrow">{phase==="current"?"הביקור שלך מתקיים עכשיו":phase==="upcoming"?"מחכים לך בביסס":phase==="cancelled"?"ההזמנה בוטלה":"הביקור שהיה"}</span><h2>{visit.title}</h2></div><span className="tag">{phase==="cancelled"?"בוטל":phase==="past"?"ביקור קודם":"הזמנה מאושרת"}</span></div>
   <div className="visit-summary"><div><strong>{visitDay.format(new Date(visit.starts_at))}</strong><bdi>{visitTime.format(new Date(visit.starts_at))}–{visitTime.format(new Date(visit.ends_at))}</bdi></div><div><strong>{visit.party_size===1?"ביקור אישי":`${visit.party_size} מבקרים`}</strong><span>משך הביקור · {Math.round((Date.parse(visit.ends_at)-Date.parse(visit.starts_at))/60000)} דקות</span></div></div>
   <h3>מה מחכה לך?</h3><ul className="visit-inclusions">{visit.included_items.map((item,index)=><li key={index}>{item}</li>)}</ul>
+  <ActivityContactCard contact={visit.operator_contact} visit={visit} title="איש הקשר לביקור שלך"/>
   {visit.participant_access&&<div className="notice"><strong>הצטרפת לביקור כמשתתף/ת</strong><p>אין צורך ברכישה נוספת. רישום בארבוקס: {visit.participant_checklist.registration?"אומת":"ממתין לבדיקה"} · הצהרת בריאות: {visit.participant_checklist.health?"נבדקה":"ממתינה לבדיקה"} · מפגש היכרות: {visit.participant_checklist.introduction?"נבדק בידי הצוות":"נדרשת בדיקת מדריכה"}.</p><p>אישור שימוש במכשירים נקבע בתוכנית האישית שלך בידי מדריכה, בנפרד מההזמנה.</p>{arboxUrl&&<a className="btn" href={arboxUrl} target="_blank" rel="noreferrer">פתיחת ארבוקס של ביסס</a>}<p className="small">נכנסים לארבוקס עם הפרטים האישיים שלך. אם עדיין אין חשבון או שהצהרת הבריאות אינה מופיעה, פונים לצוות להשלמת הרישום וההצהרה. אין צורך לקנות את הפעילות שוב.</p></div>}
   {visit.preparation_status&&<div className={visit.preparation_status==="ready"?"safe":"notice"}><strong>{visit.preparation_status==="ready"?"הפעילות שלך הוכנה ואושרה בידי הצוות":visit.preparation_status==="waiting"?"ההזמנה נקלטה — הצוות מכין את הביקור שלך":"פרטי הביקור בבדיקה — יש לתאם עם הצוות לפני הגעה"}</strong>{visit.operator_name&&<p>האחראי/ת לביקור: {visit.operator_name}</p>}</div>}
   {dj&&phase!=="cancelled"&&<details><summary>הצגה על מסך הסטודיו</summary><p>אם שיקוף מסך כלול בהזמנה, המתפעל יסביר בהגעה כיצד להתחבר למסך. השתמשו ב־AirPlay או Cast בהתאם לטלפון ולציוד במקום. אין כאן חיבור אוטומטי למסך.</p></details>}
