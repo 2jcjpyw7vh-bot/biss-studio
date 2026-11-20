@@ -1,6 +1,7 @@
 "use client";
 import {Fragment,useEffect,useMemo,useState} from "react";
 import Link from "next/link";
+import WorkoutTaskBrief from './WorkoutTaskBrief';
 import equipmentSeed from "../data/equipment.json";
 import exercisesSeed from "../data/exercises.json";
 import {availableExerciseEquipment,exerciseEquipmentLabel,EQUIPMENT_CATEGORY_OPTIONS} from "../lib/equipment-families";
@@ -568,6 +569,7 @@ async function addEquipment(e){
   {task&&<section className="panel">
     <div className="row between"><h1>{task.title}</h1><Link className="btn" href="/my-sessions">האימונים שלי</Link></div>
     <p>{taskWorkoutTypes[task.frame.type]} · {new Date(task.starts_at).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem"})} · {task.frame.duration} דקות · {task.frame.participants} משתתפות</p>
+    <WorkoutTaskBrief task={task}/>
     <p className="small">התאמות שנקבעו לאימון · {task.frame.limitations.map(limit=>taskLimitations[limit]).join(" · ")||"ללא התאמות"}</p>
     {taskLocked?<div className="safe"><p>האימון בנוי ונשמר.</p>{taskState.canSubmit&&<button className="btn" onClick={()=>{setTaskEditing(true);setStructure(workout?.structure||"תחנות");setLevel(workout?.level||"מעורב");setMusicUrl(workout?.musicUrl||"");setMusicTitle(workout?.musicTitle||"");setTab("builder");}}>עריכת האימון</button>}</div>:taskState.canSubmit?
       <button className="btn" onClick={()=>setTab("builder")}>בחירת מבנה וציוד</button>:<p className="notice">ממתין להכנת האימון בידי המדריכה.</p>}

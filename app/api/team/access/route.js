@@ -3,6 +3,7 @@ import {supabaseAdmin} from "../../../../lib/supabase";
 import {studioProfileFromRequest} from "../../../../lib/studio-auth";
 import {whatsappNumber} from "../../../../lib/substitute-contact";
 import {isRecruitmentId} from "../../../../lib/recruitment";
+import {workoutTaskNotice} from '../../../../lib/workout-task-notice';
 
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 
@@ -35,7 +36,7 @@ export async function POST(req) {
   }
   let task;
   if(body.taskId){
-    const result=await db.from("biss_workout_tasks").select("id,instructor_id,title,starts_at").eq("id",body.taskId).maybeSingle();
+    const result=await db.from("biss_workout_tasks").select("id,instructor_id,title,starts_at,frame,submitted_at").eq("id",body.taskId).maybeSingle();
     if(result.error)return reply({error:"לא ניתן לבדוק את המשימה."},503);
     task=result.data;
     if(!task||task.instructor_id!==person.id)return reply({error:"המשימה אינה משויכת למדריכה שנבחרה."},409);
@@ -61,6 +62,6 @@ export async function POST(req) {
   if(person.auth_user_id&&data.user?.id!==person.auth_user_id)return reply({error:"חשבון הכניסה השתנה. יש לרענן את פרטי הצוות."},409);
   url.hash=new URLSearchParams({token_hash:data.properties.hashed_token}).toString();
   const visitText=visit?`הביקור שלך בביסס ״${visit.title}״ מאושר לתאריך ${new Intl.DateTimeFormat("he-IL",{timeZone:"Asia/Jerusalem",dateStyle:"medium"}).format(new Date(visit.starts_at))}, בין ${new Intl.DateTimeFormat("he-IL",{timeZone:"Asia/Jerusalem",hour:"2-digit",minute:"2-digit"}).format(new Date(visit.starts_at))} ל־${new Intl.DateTimeFormat("he-IL",{timeZone:"Asia/Jerusalem",hour:"2-digit",minute:"2-digit"}).format(new Date(visit.ends_at))}. באזור האישי מחכים פרטי הביקור ומה שכלול בהזמנה.`:"";
-  const text=`היי ${person.full_name}, כאן BISS Studio.\n${visit?visitText:activity?`מחכה לך משימת הכנת פעילות ״${activity.title}״, בתאריך ${new Date(activity.starts_at).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem"})}. פרטי הציוד וקבלת הפנים מופיעים במשימה.`:task?`מחכה לך בקשה לבניית אימון ״${task.title}״, בתאריך ${new Date(task.starts_at).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem"})}. מסגרת האימון כבר הוגדרה עבורך.`:"האזור האישי שלך בסטודיו מוכן."}\n\nאפשר לפתוח את הקישור ולאשר כניסה. זהו קישור אישי וחד־פעמי שמיועד לך בלבד.\n${url.href}\n\nאם פג תוקף הקישור, אפשר לבקש מהצוות קישור חדש.`;
+  const text=task?workoutTaskNotice(person,task,url.href):`היי ${person.full_name}, כאן BISS Studio.\n${visit?visitText:activity?`מחכה לך משימת הכנת פעילות ״${activity.title}״, בתאריך ${new Date(activity.starts_at).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem"})}. פרטי הציוד וקבלת הפנים מופיעים במשימה.`:task?`מחכה לך בקשה לבניית אימון ״${task.title}״, בתאריך ${new Date(task.starts_at).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem"})}. מסגרת האימון כבר הוגדרה עבורך.`:"האזור האישי שלך בסטודיו מוכן."}\n\nאפשר לפתוח את הקישור ולאשר כניסה. זהו קישור אישי וחד־פעמי שמיועד לך בלבד.\n${url.href}\n\nאם פג תוקף הקישור, אפשר לבקש מהצוות קישור חדש.`;
   return reply({whatsapp:`https://wa.me/${whatsappNumber(person.phone)}?text=${encodeURIComponent(text)}`,recipient:person.full_name});
 }
