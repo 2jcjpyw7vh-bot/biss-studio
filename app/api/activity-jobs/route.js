@@ -6,6 +6,7 @@ import {isRecruitmentId} from '../../../lib/recruitment';
 import {writeAudit} from '../../../lib/audit';
 import {activityCatalog,activitySetup,activityCustomerPreferences} from '../../../lib/activity-catalog';
 import {activityRoleAllowed,canReadActivity,suggestedActivityKind,activitySourceFrame,activitySourceMatches,activityTerms,activityPlan,completeActivityPlan} from '../../../lib/activity-operations';
+import {activityCustomerContacts} from '../../../lib/activity-contact';
 export const dynamic='force-dynamic';
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{'Cache-Control':'no-store'}});
 async function access(req){
@@ -37,10 +38,15 @@ export async function GET(req){
  if(profile.role!=='manager')query=query.eq('assigned_id',profile.id);
  const result=await query;if(result.error)return reply({error:'לא ניתן לטעון משימות פעילות'},503);
  const allowed=result.data.filter(job=>canReadActivity(profile,job));
- const visitIds=allowed.filter(job=>job.kind==='dj'&&job.visit_id).map(job=>job.visit_id);
- const visits=visitIds.length?await db.from('biss_visits').select('id,preferences').in('id',visitIds):{data:[]};
+ const visitIds=allowed.filter(job=>job.visit_id).map(job=>job.visit_id);
+ const visits=visitIds.length?await db.from('biss_visits').select('id,customer_id,status,preferences').in('id',visitIds):{data:[]};
  if(visits.error)return reply({error:'לא ניתן לטעון את בקשות ההכנה של הלקוח'},503);
- const jobs=allowed.map(job=>visibleJob({...job,customer_preferences:job.kind==='dj'?activityCustomerPreferences(visits.data.find(visit=>visit.id===job.visit_id)?.preferences):null},profile));
+ const participants=visitIds.length?await db.from('biss_visit_participants').select('visit_id,user_id,status,contact_phone').in('visit_id',visitIds).eq('status','accepted'):{data:[]};
+ if(participants.error)return reply({error:'לא ניתן לטעון את אנשי הקשר לפעילות'},503);
+ const peopleIds=[...new Set([...visits.data.map(visit=>visit.customer_id),...participants.data.map(row=>row.user_id)].filter(Boolean))];
+ const contacts=peopleIds.length?await db.from('biss_users').select('id,full_name,phone,email,status').in('id',peopleIds):{data:[]};
+ if(contacts.error)return reply({error:'לא ניתן לטעון את פרטי הקשר'},503);
+ const jobs=allowed.map(job=>{const visit=visits.data.find(visit=>visit.id===job.visit_id);return visibleJob({...job,customer_contacts:activityCustomerContacts(profile,job,visit,contacts.data.find(person=>person.id===visit?.customer_id),participants.data,contacts.data),customer_preferences:job.kind==='dj'?activityCustomerPreferences(visit?.preferences):null},profile);});
  let users=[];
  if(profile.role==='manager'){
   const people=await db.from('biss_users').select('id,full_name,email,role').eq('status','active').order('full_name');
