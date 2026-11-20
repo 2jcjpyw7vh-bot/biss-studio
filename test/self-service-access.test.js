@@ -37,6 +37,16 @@ test("unregistered or inactive people are denied self-service access",()=>{
  assert.equal(selfServiceAccess({role:"trainee",status:"inactive"},null).mode,"denied");
 });
 test("trainee without an approved program receives mat-only access",()=>assert.deepEqual(selfServiceAccess(trainee,null),{mode:"mat_only",equipment:false}));
+test('a staff member who is also a customer needs the same explicit personal program approval',()=>{
+ for(const role of ['manager','instructor','operator']){
+  const profile={role,status:'active'};
+  assert.equal(selfServiceAccess(profile,null).equipment,false);
+  assert.equal(selfServiceAccess(profile,{status:'draft',equipment_access:true,coach_id:'coach',approved_at:'2026-01-01'}).equipment,false);
+  assert.equal(selfServiceAccess(profile,{status:'active',equipment_access:true,coach_id:'coach',approved_at:'2026-01-01'}).equipment,true);
+  assert.equal(selfServiceAccess({...profile,status:'inactive'},null).mode,'denied');
+ }
+ assert.equal(selfServiceAccess({role:'unknown',status:'active'},null).mode,'denied');
+});
 test("equipment requires an active trainer-approved program",()=>{
  const approved={status:"active",approved_at:"2026-11-10T08:00:00Z",coach_id:"coach",equipment_access:true,starts_on:"2026-11-01",ends_on:"2026-12-01"};
  assert.equal(selfServiceAccess(trainee,approved,new Date("2026-11-10T10:00:00Z")).equipment,true);

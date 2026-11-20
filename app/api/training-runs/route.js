@@ -1,13 +1,13 @@
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {studioProfileFromRequest} from "../../../lib/studio-auth";
-import {loadCurrentWorkout} from "../../../lib/self-service-access";
+import {activeStudioCustomer,loadCurrentWorkout} from "../../../lib/self-service-access";
 
 export const dynamic="force-dynamic";
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 export async function POST(req){
  const db=supabaseAdmin();if(!db)return reply({error:"שירות Studio אינו מחובר"},503);
- const{profile,error,status}=await studioProfileFromRequest(req,db);if(error)return reply({error},status);if(profile.role!=="trainee")return reply({error:"אזור זה מיועד למתאמנות"},403);
+ const{profile,error,status}=await studioProfileFromRequest(req,db);if(error)return reply({error},status);if(!activeStudioCustomer(profile))return reply({error:"אזור זה מיועד למתאמנות"},403);
  const body=await req.json(),programId=String(body.program_id||""),sessionIndex=Number(body.session_index);
  if(body.action==="start"){
   if(!Number.isInteger(sessionIndex)||sessionIndex<0)return reply({error:"אימון לא תקין"},400);

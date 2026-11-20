@@ -42,7 +42,8 @@ export async function GET(req){
   return {...visit,preparation_status:preparation,operator_name:assigned?.full_name||"",operator_contact:assignedActivityContact(job,visit,assigned),...(preparation!=="ready"?{instructions:preparation==="waiting"?"ההזמנה שלך נקלטה. הצוות מכין את הביקור ויעדכן כאן את הוראות ההגעה והשימוש. יש לתאם הגעה לפני היציאה.":"הצוות בודק את פרטי הביקור העדכניים מול ארבוקס. יש לתאם הגעה לפני היציאה.",equipment_notes:""}:{})};
  });
  const shop=await db.from("biss_admin_settings").select("setting_value").eq("setting_key","farm_shop_url").maybeSingle();
- return reply({profile:{full_name:person.data.full_name},visits,preview:isPreview,shopUrl:shop.error?"":farmShopUrl(shop.data?.setting_value)});
+ const personal=await db.from('biss_workout_tasks').select('id').eq('frame->brief->>customerId',owner).limit(1);
+ return reply({profile:{full_name:person.data.full_name},visits,hasPersonalTraining:!personal.error&&Boolean(personal.data?.length),preview:isPreview,shopUrl:shop.error?"":farmShopUrl(shop.data?.setting_value)});
 }
 export async function POST(req){
  const {db,profile,response}=await access(req);if(response)return response;

@@ -22,7 +22,7 @@ export default function WorkoutTasksList() {
     return()=>{active=false;};
   },[attempt]);
 
-  const visibleTasks=(tasks||[]).filter(task=>filter==="all"||(filter==="submitted"?Boolean(task.submitted_at):!task.submitted_at));
+  const visibleTasks=(tasks||[]).filter(task=>filter==="all"||(filter==="submitted"?Boolean(task.submitted_at||task.frame?.follow_up):!task.submitted_at||Boolean(task.frame?.follow_up&&!task.frame.follow_up.review_locked_at)));
 
   return <section className="panel" id="workout-tasks">
     <h2>{canManage?"משימות בניית אימון בצוות":"משימות לבניית אימון"}</h2>
@@ -31,7 +31,7 @@ export default function WorkoutTasksList() {
       :tasks===null?<p role="status">טוען משימות…</p>
       :visibleTasks.length===0?<p>אין משימות בתצוגה שנבחרה.</p>
       :visibleTasks.map(task=><article className="card workout-task-card" key={task.id}>
-        <div><strong>{task.title}</strong><div className="small">{new Date(task.starts_at).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem"})} · {task.submitted_at?"האימון נשלח":"ממתין לבנייה"}</div></div>
+        <div><strong>{task.title}</strong><div className="small">{new Date(task.starts_at).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem"})} · {task.frame?.follow_up?(task.frame.follow_up.review_locked_at?'תוכנית בטיפול מנהל':'טיוטת תוכנית ממתינה לבדיקת מנהל'):task.submitted_at?"האימון נשלח":"ממתין לבנייה"}</div></div>
         <Link className="btn" href={`/?buildTask=${task.id}`}>פתיחת המשימה</Link>
         <WorkoutTaskBrief task={task}/>
         {canManage&&!task.submitted_at&&isPersonalIntroduction(task.title)&&<TaskBriefEditor task={task} onSaved={()=>retry(n=>n+1)}/>}

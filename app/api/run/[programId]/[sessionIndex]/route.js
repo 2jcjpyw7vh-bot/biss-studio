@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../../../lib/supabase";
 import {studioProfileFromRequest} from "../../../../../lib/studio-auth";
-import {loadCurrentWorkout} from "../../../../../lib/self-service-access";
+import {activeStudioCustomer,loadCurrentWorkout} from "../../../../../lib/self-service-access";
 import {sessionPlaylist} from "../../../../../lib/program-session";
 import {studioPlaylistsForType,studioPlaylistType} from "../../../../../lib/studio-playlists";
 
@@ -15,7 +15,7 @@ export async function GET(req,{params}) {
  if(!db)return reply({error:"שירות Studio אינו מחובר"},503);
  const {profile,error,status}=await studioProfileFromRequest(req,db);
  if(error)return reply({error},status);
- if(profile.role!=="trainee")return reply({error:"אזור זה מיועד למתאמנות"},403);
+ if(!activeStudioCustomer(profile))return reply({error:"אזור זה מיועד למתאמנות"},403);
 
  const result=await loadCurrentWorkout(db,profile,programId,index);
  if(result.error)return reply({error:result.error},result.status);
