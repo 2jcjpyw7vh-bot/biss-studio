@@ -32,13 +32,15 @@ test('workout time fits booked time; non-DJ gear requests are not saved',()=>{
 });
 test('visit phase and login target honor the booking boundary and client role',()=>{
  assert.equal(visitPhase(visit,new Date(visit.starts_at)),'current');assert.equal(visitPhase(visit,new Date(visit.ends_at)),'past');
- const id='20d8be70-bafd-49e3-92b9-051d69b0978c';assert.equal(loginTarget('visit:'+id),'visit:'+id);assert.equal(loginDestination('visit:'+id,'trainee'),'/my-visits?visit='+id);assert.equal(loginDestination('visit:'+id,'instructor'),'');assert.equal(loginTarget('visit:https://evil.example'),'');assert.equal(loginDestination('my-visits','trainee'),'/my-visits');
+ const id='20d8be70-bafd-49e3-92b9-051d69b0978c';assert.equal(loginTarget('visit:'+id),'visit:'+id);assert.equal(loginDestination('visit:'+id,'trainee'),'/my-visits?visit='+id);assert.equal(loginDestination('visit:'+id,'instructor'),'/my-visits?visit='+id);assert.equal(loginTarget('visit:https://evil.example'),'');assert.equal(loginDestination('my-visits','trainee'),'/my-visits');
 });
 
 test('client ownership cannot be overridden through a preview parameter',()=>{
  const other="20d8be70-bafd-49e3-92b9-051d69b0978c";
  assert.equal(visitOwnerId({id:"self",role:"trainee",status:"active"},other),"self");
- assert.equal(visitOwnerId({id:"coach",role:"instructor",status:"active"},other),"");
+ assert.equal(visitOwnerId({id:"coach",role:"instructor",status:"active"},other),"coach");
+ assert.equal(visitOwnerId({id:"operator",role:"operator",status:"active"},other),"operator");
+ assert.equal(visitOwnerId({id:"manager",role:"manager",status:"active"},null),"manager");
  assert.equal(visitOwnerId({id:"manager",role:"manager",status:"active"},other),other);
  assert.equal(visitOwnerId({id:"manager",role:"manager",status:"inactive"},other),"");
 });

@@ -13,7 +13,7 @@ export async function GET(req){
  const {db,response}=await access(req);if(response)return response;
  const [visits,customers]=await Promise.all([
   db.from("biss_visits").select("*").order("starts_at",{ascending:false}).limit(100),
-  db.from("biss_users").select("id,full_name,email,phone").eq("role","trainee").eq("status","active").order("full_name")]);
+  db.from("biss_users").select("id,full_name,email,phone,role").eq("status","active").order("full_name")]);
  if(visits.error||customers.error)return reply({error:"לא ניתן לטעון ביקורים ולקוחות"},503);
  const shop=await db.from("biss_admin_settings").select("setting_value").eq("setting_key","farm_shop_url").maybeSingle();
  return reply({visits:visits.data,customers:customers.data,shopUrl:shop.error?"":farmShopUrl(shop.data?.setting_value)});

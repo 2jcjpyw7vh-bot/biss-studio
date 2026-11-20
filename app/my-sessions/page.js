@@ -68,6 +68,8 @@ export default function MySessionsPage(){
     </nav>
     {user.role==="manager"&&<section className="personal-management" aria-labelledby="management-title"><h2 id="management-title">ניהול הסטודיו</h2><div className="personal-tools">
       <Link href="/visits" className="personal-tool"><strong>ביקורים וחוויות</strong><span>לקוחות, אימון עצמאי, DJ וביקורים משולבים</span></Link>
+      <Link href="/operations" className="personal-tool"><strong>הכנת פעילויות ומתפעלים</strong><span>שיוך אחראי, רשימות ציוד ואישור ביקור ללקוח</span></Link>
+      <Link href="/my-visits" className="personal-tool"><strong>הביקורים שלי כלקוח</strong><span>הזמנות אישיות שבוצעו גם כשיש לך תפקיד צוות</span></Link>
       {management.map(([tab,title,description])=><Link href={`/?tab=${tab}`} className="personal-tool" key={tab}><strong>{title}</strong><span>{description}</span></Link>)}
     </div></section>}
     {message&&<section className="panel notice" role="status">{message} <button className="btn" onClick={()=>retry(value=>value+1)}>ניסיון חוזר</button></section>}

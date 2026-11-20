@@ -6,9 +6,11 @@ import Link from "next/link";
 import { supabaseBrowser } from "../../lib/supabase-browser";
 import ArboxRecruitment from "./ArboxRecruitment";
 import WorkoutTaskForm from "./WorkoutTaskForm";
+import ActivityTaskLink from "./ActivityTaskLink";
+import {suggestedActivityKind} from "../../lib/activity-operations";
 
 const displayDate = value => new Intl.DateTimeFormat("he-IL", {timeZone:"UTC",day:"numeric",month:"numeric"}).format(new Date(`${value}T00:00:00Z`));
-const isHourlyActivity=lesson=>/\bDJs?\b|אימון\s+עצמאי|פעילות\s+שעתית/i.test(lesson.name||"");
+const isHourlyActivity=lesson=>suggestedActivityKind(lesson.name)!=="class";
 const matchLabels = {
   linked:"מקושר ל־Studio",
   linked_time_changed:"מקושר · המועד שונה ב־Studio",
@@ -152,9 +154,9 @@ export default function ArboxPanel() {
               {matchLabels[lesson.match]&&<span className={`tag ${lesson.match==="linked"?"green":""}`}>{matchLabels[lesson.match]}</span>}
             </div>
             <div className="small">{displayDate(lesson.date)} · <bdi>{lesson.start}{lesson.end ? `–${lesson.end}` : ""}</bdi>{lesson.location && ` · ${lesson.location}`}</div>
-            <div className={lesson.instructorName||lesson.secondInstructorName?"small":"notice"}>{lesson.instructorName||lesson.secondInstructorName?`מדריכה: ${[lesson.instructorName,lesson.secondInstructorName].filter(Boolean).join(" · ")}`:"מדריכה לא משובצת"}</div>
+            <div className={lesson.instructorName||lesson.secondInstructorName?"small":"notice"}>{lesson.instructorName||lesson.secondInstructorName?`${isHourlyActivity(lesson)?"צוות בארבוקס":"מדריכה"}: ${[lesson.instructorName,lesson.secondInstructorName].filter(Boolean).join(" · ")}`:isHourlyActivity(lesson)?"אחראי לא משובץ בארבוקס":"מדריכה לא משובצת"}</div>
             <div className="small">{lesson.capacity!==null && `קיבולת ${lesson.capacity}`}{lesson.capacity!==null && lesson.registrations!==null && " · "}{lesson.registrations!==null && `נרשמו ${lesson.registrations}`}</div>
-            {isHourlyActivity(lesson)&&<p className="notice">פעילות עצמאית · נתוני תשלום ותוספות ציוד אינם מאומתים בתצוגת היומן. שיוך משימת הכנה וגיוס מתפעל לפעילות עדיין אינם זמינים ב־Studio.</p>}
+            {isHourlyActivity(lesson)&&<><p className="small">פעילות שעתית · אפשר לשייך אחראי ולהכין את הביקור ב־Studio. מנהל מאמת את התשלום והתוספות מול ארבוקס לפני הפרסום ללקוח.</p>{isManager&&!lesson.cancelled&&lesson.scheduleId&&<ActivityTaskLink lesson={lesson}/>}</>}
             {!schedule.transparentRequested&&!isHourlyActivity(lesson)&&!lesson.cancelled&&lesson.scheduleId&&<button className="btn" onClick={()=>setSelectedLesson(selectedLesson===lesson.scheduleId?"":lesson.scheduleId)}>בקשת בניית אימון</button>}
             {!schedule.transparentRequested&&!isHourlyActivity(lesson)&&!lesson.cancelled&&lesson.scheduleId&&!lesson.instructorName&&!lesson.secondInstructorName&&<ArboxRecruitment lesson={lesson}/>}
             {!schedule.transparentRequested&&!isHourlyActivity(lesson)&&selectedLesson&&selectedLesson===lesson.scheduleId&&<WorkoutTaskForm key={lesson.scheduleId} lesson={lesson} token={scheduleToken}/>}
