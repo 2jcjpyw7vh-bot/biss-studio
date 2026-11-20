@@ -4,7 +4,7 @@ import Link from "next/link";
 import {useEffect,useRef} from "react";
 import {usePathname} from "next/navigation";
 import {useStudioSession} from "./StudioSession";
-import {personalArea,publicStudioPath} from "../lib/studio-navigation";
+import {accountArea,personalArea,publicStudioPath} from "../lib/studio-navigation";
 
 const roles={manager:"מנהלת הסטודיו",instructor:"מדריכה",trainee:"לקוח/ה",operator:"מתפעל/ת"};
 
@@ -21,18 +21,19 @@ export default function StudioAccountBar(){
     return()=>document.removeEventListener("pointerdown",close);
   },[]);
   if(publicStudioPath(path)&&(!user||path.startsWith("/train/")))return null;
-  const area=personalArea(user?.role);
+  const area=accountArea(user?.role,path),customerView=Boolean(user)&&area==='/my-visits';
   return <header className="studio-account-bar">
     <div className="studio-account-inner">
       <Link className="studio-brand" href={user?area:"/"} aria-label="BISS Studio — האזור האישי"><img src="/biss-logo.png" alt=""/><span>BISS <b>Studio</b></span></Link>
       <nav className="studio-account-nav" aria-label="ניווט אישי">
         {user?<>
-          <Link className={`studio-personal-link ${path===area?"current":""}`} aria-current={path===area?"page":undefined} href={area}>האזור האישי</Link>
+          <Link className={`studio-personal-link ${path===area?"current":""}`} aria-current={path===area?"page":undefined} href={area}>{customerView?'האזור שלי כלקוח':'האזור האישי'}</Link>
           <details className="studio-account-menu" ref={menu} onKeyDown={event=>{if(event.key==="Escape")event.currentTarget.open=false;}}>
             <summary><span className="studio-connected">מחובר</span><strong>{user.full_name}</strong><span aria-hidden="true">⌄</span></summary>
             <div className="studio-account-dropdown">
               <strong>{user.full_name}</strong><span className="small">{roles[user.role]}</span>
               <Link href={area}>פתיחת האזור האישי</Link>
+              {user.role!=='trainee'&&<Link href={customerView?personalArea(user.role):'/my-visits'}>{customerView?(user.role==='manager'?'מעבר לניהול הסטודיו':'מעבר לאזור הצוות'):'הביקורים שלי כלקוח'}</Link>}
               {user.role==="manager"&&<Link href="/login?next=account">הגדרות חשבון ו־PIN</Link>}
               <p className="small">הכניסה נשמרת במכשיר הזה ומתחדשת אוטומטית.</p>
               <button type="button" onClick={async()=>{if(await signOut())window.location.assign("/login");}}>יציאה מהחשבון</button>

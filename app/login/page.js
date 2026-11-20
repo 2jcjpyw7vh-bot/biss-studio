@@ -3,8 +3,7 @@ import StudioSocialLinks from "../StudioSocialLinks";
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {supabaseBrowser} from "../../lib/supabase-browser";
-import {loginDestination, loginTarget} from "../../lib/studio-login";
-import {personalArea} from "../../lib/studio-navigation";
+import {loginEntryDestination, loginTarget} from "../../lib/studio-login";
 
 const roleLabels={manager:"מנהלת",instructor:"מדריכה",trainee:"לקוח/ה",operator:"מתפעל/ת"};
 
@@ -36,13 +35,14 @@ export default function LoginPage() {
 
   async function finish(session, target) {
     const user = await studioProfile(session);
-    const destination = loginDestination(target, user.role)||(!target?personalArea(user.role):"");
+    const destination = loginEntryDestination(target,user.role);
     if (destination) {
       window.location.replace(destination);
       return;
     }
     setProfile(user);
     setAccessToken(session.access_token);
+    if(!target)setMessage('הכניסה הושלמה. אפשר לבחור את הביקורים שלך כלקוח או את אזור העבודה שלך, באותו חשבון.');
     if (target === "arbox") setMessage("לוח ארבוקס זמין רק למנהלת Studio. אפשר לצאת ולהיכנס בחשבון מנהלת.");
   }
 
@@ -178,10 +178,11 @@ export default function LoginPage() {
       </form>}
     </>}
     {profile && <div className="safe"><strong>שלום {profile.full_name}</strong><p>תפקיד: {roleLabels[profile.role] || profile.role}</p>
+      {profile.role!=='trainee'&&<Link className="btn primary" href="/my-visits">כניסה לאזור שלי כלקוח</Link>}
       {profile.role === "operator" ? <Link className="btn primary" href="/operations">הפעילויות שלי</Link> : profile.role === "trainee" ? <Link className="btn primary" href="/my-visits">הביקורים שלי</Link> : <Link className="btn primary" href="/my-sessions">האימונים שלי</Link>}
     </div>}
     {blocked && !checking && <button className="btn" disabled={busy} onClick={signOut}>יציאה והחלפת חשבון</button>}
-    {profile?.role === "manager" && <form className="pin-reset-card" onSubmit={resetPin}>
+    {profile?.role === "manager" && next==='account' && <form className="pin-reset-card" onSubmit={resetPin}>
       <h2>איפוס PIN מנהל</h2><div className="sub">בחרי PIN חדש בן 6 ספרות.</div>
       <label className="field">PIN חדש<input type="password" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required value={pin} onChange={e=>setPin(e.target.value.replace(/\D/g,""))}/></label>
       <label className="field">אימות PIN<input type="password" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required value={pinConfirm} onChange={e=>setPinConfirm(e.target.value.replace(/\D/g,""))}/></label>
