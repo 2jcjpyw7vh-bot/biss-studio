@@ -27,7 +27,7 @@ alter table public.biss_activity_jobs enable row level security;
 revoke all on public.biss_activity_jobs from public,anon,authenticated;
 grant select,insert,update on public.biss_activity_jobs to service_role;
 
-create function public.studio_prepare_activity(p_id uuid,p_actor uuid,p_revision integer,p_action text,p_value jsonb)
+create or replace function public.studio_prepare_activity(p_id uuid,p_actor uuid,p_revision integer,p_action text,p_value jsonb)
 returns text language plpgsql security invoker set search_path='' as $$
 declare job public.biss_activity_jobs%rowtype; actor public.biss_users%rowtype;
  person public.biss_users%rowtype; item jsonb; visit uuid; result text; begin
@@ -47,9 +47,19 @@ declare job public.biss_activity_jobs%rowtype; actor public.biss_users%rowtype;
   if not exists(select 1 from public.biss_users where id=(p_value->>'customer_id')::uuid and status='active') then return 'invalid_customer';end if;
   if coalesce(btrim(p_value->>'receipt'),'')='' or coalesce(btrim(p_value->>'booking_reference'),'')='' then return 'unverified';end if;
   if jsonb_typeof(p_value->'terms'->'items') is distinct from 'array' then return 'invalid';end if;
+  if exists(select 1 from public.biss_visits where status='confirmed' and id is distinct from job.visit_id and starts_at<job.ends_at and ends_at>job.starts_at) then return 'overlap';end if;
+  if exists(select 1 from public.biss_visits where arbox_booking_id=p_value->>'booking_reference' and id is distinct from job.visit_id) then return 'duplicate';end if;
+  visit=coalesce(job.visit_id,gen_random_uuid());
+  insert into public.biss_visits(id,customer_id,arbox_booking_id,title,service_kind,activities,starts_at,ends_at,party_size,included_items,address,instructions,equipment_notes,verified_by)
+  values(visit,(p_value->>'customer_id')::uuid,p_value->>'booking_reference',job.title,case when job.kind='dj' then 'dj' when job.kind='self_workout' then 'workout' else 'leisure' end,
+   case when job.kind='dj' then '["dj"]'::jsonb when job.kind='self_workout' then '["workout"]'::jsonb else '["leisure"]'::jsonb end,job.starts_at,job.ends_at,(p_value->>'party_size')::integer,
+   jsonb_build_array(job.title)||(select coalesce(jsonb_agg((entry->>'name')||' × '||(entry->>'quantity')),'[]'::jsonb) from jsonb_array_elements(p_value->'terms'->'items') entry),
+   'הזורעים 6 מושב היוגב','','',actor.id)
+  on conflict(id) do update set customer_id=excluded.customer_id,arbox_booking_id=excluded.arbox_booking_id,party_size=excluded.party_size,
+   included_items=excluded.included_items,instructions='',equipment_notes='',status='confirmed',verified_by=excluded.verified_by,verified_at=now(),revision=public.biss_visits.revision+1;
   update public.biss_activity_jobs set assigned_id=person.id,customer_id=(p_value->>'customer_id')::uuid,
    party_size=(p_value->>'party_size')::integer,booking_reference=p_value->>'booking_reference',receipt=p_value->>'receipt',
-   terms=p_value->'terms',plan='{"picks":[]}',verified_by=actor.id,verified_at=now(),status='draft',revision=revision+1,updated_at=now() where id=p_id;
+   terms=p_value->'terms',plan='{"picks":[]}',visit_id=visit,verified_by=actor.id,verified_at=now(),status='draft',revision=revision+1,updated_at=now() where id=p_id;
   return 'saved';
  end if;
  if p_action in ('save','submit') then
@@ -67,7 +77,7 @@ declare job public.biss_activity_jobs%rowtype; actor public.biss_users%rowtype;
  end if;
  if p_action in ('reopen','cancel') then
   if job.starts_at<=now() then return 'closed';end if;
-  if job.visit_id is not null then update public.biss_visits set status='cancelled',revision=revision+1 where id=job.visit_id;end if;
+  if job.visit_id is not null then update public.biss_visits set status=case when p_action='cancel' then 'cancelled' else 'confirmed' end,instructions='',equipment_notes='',revision=revision+1 where id=job.visit_id;end if;
   update public.biss_activity_jobs set status=case when p_action='cancel' then 'cancelled' else 'draft' end,revision=revision+1,updated_at=now() where id=p_id;return 'saved';
  end if;
  if p_action='approve' then

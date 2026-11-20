@@ -30,7 +30,7 @@ export async function GET(req){
   const job=jobs.data.find(job=>job.visit_id===visit.id);if(!job)return visit;
   const assigned=staff.data?.find(person=>person.id===job.assigned_id&&person.status==="active");
   const preparation=assigned?activityVisitState(job,source):"unverified";
-  return {...visit,preparation_status:preparation,operator_name:assigned?.full_name||"",...(preparation!=="ready"?{instructions:"הצוות בודק את פרטי הביקור העדכניים מול ארבוקס. יש לתאם הגעה לפני היציאה.",equipment_notes:""}:{})};
+  return {...visit,preparation_status:preparation,operator_name:assigned?.full_name||"",...(preparation!=="ready"?{instructions:preparation==="waiting"?"ההזמנה שלך נקלטה. הצוות מכין את הביקור ויעדכן כאן את הוראות ההגעה והשימוש. יש לתאם הגעה לפני היציאה.":"הצוות בודק את פרטי הביקור העדכניים מול ארבוקס. יש לתאם הגעה לפני היציאה.",equipment_notes:""}:{})};
  });
  const shop=await db.from("biss_admin_settings").select("setting_value").eq("setting_key","farm_shop_url").maybeSingle();
  return reply({profile:{full_name:person.data.full_name},visits,preview:isPreview,shopUrl:shop.error?"":farmShopUrl(shop.data?.setting_value)});
