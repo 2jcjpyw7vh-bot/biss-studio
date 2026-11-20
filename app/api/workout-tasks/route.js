@@ -6,6 +6,8 @@ import {readArboxSchedule} from "../../../lib/arbox-config";
 import {isRecruitmentId} from "../../../lib/recruitment";
 import {publicWorkoutShare} from "../../../lib/public-workout-share";
 import {canReadWorkoutTask,matchesWorkoutTask,workoutTaskAlternatives,workoutTaskFrame} from "../../../lib/workout-task";
+import {introductionBrief} from '../../../lib/workout-task-notice';
+import {isPersonalIntroduction} from '../../../lib/activity-operations';
 
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 const tasks=db=>db.from("biss_workout_tasks");
@@ -25,6 +27,11 @@ export async function GET(req) {
   if(response)return response;
   const params=new URL(req.url).searchParams;
   const id=params.get("id");
+  if(params.has('customers')){
+    if(profile.role!=='manager')return reply({error:'נדרשת הרשאת ניהול.'},403);
+    const r=await db.from('biss_users').select('id,full_name').eq('status','active').order('full_name').limit(200);
+    return r.error?reply({error:'לא ניתן לטעון לקוחות.'},503):reply({customers:r.data});
+  }
   if(params.has("instructors")){
     if(profile.role!=="manager")return reply({error:"נדרשת הרשאת ניהול."},403);
     const {data,error}=await db.from("biss_users").select("id,full_name,email,phone").in("role",["instructor","manager"]).eq("status","active").order("full_name");
@@ -37,7 +44,7 @@ export async function GET(req) {
     if(!data||!canReadWorkoutTask(profile,data))return reply({error:"משימת הבנייה לא נמצאה בחשבון הזה."},404);
     return reply({task:data,canSubmit:profile.id===data.instructor_id});
   }
-  let query=tasks(db).select("id,title,starts_at,instructor_id,submitted_at").order("starts_at",{ascending:false}).limit(50);
+  let query=tasks(db).select("id,title,starts_at,instructor_id,submitted_at,frame").order("starts_at",{ascending:false}).limit(50);
   if(profile.role!=="manager")query=query.eq("instructor_id",profile.id);
   const {data,error}=await query;
   return error?reply({error:"לא ניתן לטעון משימות בנייה."},503):reply({tasks:data,canManage:profile.role==="manager"});
@@ -47,6 +54,18 @@ export async function POST(req) {
   const {db,profile,response}=await access(req);
   if(response)return response;
   const body=await req.json().catch(()=>null);
+  if(body?.action==='brief'){
+    if(profile.role!=='manager')return reply({error:'נדרשת הרשאת ניהול.'},403);
+    if(!isRecruitmentId(body.id)||!isRecruitmentId(body.customerId))return reply({error:'יש לבחור משימה ולקוח רשום.'},400);
+    const [t,c]=await Promise.all([tasks(db).select(fields).eq('id',body.id).maybeSingle(),db.from('biss_users').select('id,full_name,status').eq('id',body.customerId).maybeSingle()]);
+    if(t.error||c.error)return reply({error:'לא ניתן לבדוק את המשימה והלקוח.'},503);
+    if(!t.data||!isPersonalIntroduction(t.data.title))return reply({error:'התדריך הזה מיועד למפגש פתיחה לאימון עצמאי בלבד.'},409);
+    if(t.data.submitted_at||Date.parse(t.data.starts_at)<=Date.now())return reply({error:'ניתן לעדכן תדריך לפני המפגש ולפני הגשת האימון.'},409);
+    const brief=introductionBrief(body,c.data);
+    if(!brief)return reply({error:'יש לאמת את רכישת סדרת ששת המפגשים עבור הלקוח הפעיל.'},400);
+    const saved=await tasks(db).update({frame:{...t.data.frame,brief}}).eq('id',body.id).is('submitted_at',null).select('id').maybeSingle();
+    return saved.error?reply({error:'שמירת התדריך נכשלה.'},503):!saved.data?reply({error:'המשימה השתנתה. יש לרענן.'},409):reply({saved:true});
+  }
   if(body?.action==="submit"){
     if(!isRecruitmentId(body.id))return reply({error:"הקישור אינו תקין."},400);
     const {data:task,error}=await tasks(db).select(fields).eq("id",body.id).eq("instructor_id",profile.id).maybeSingle();
