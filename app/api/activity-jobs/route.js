@@ -4,7 +4,7 @@ import {studioProfileFromRequest} from '../../../lib/studio-auth';
 import {readArboxSchedule} from '../../../lib/arbox-config';
 import {isRecruitmentId} from '../../../lib/recruitment';
 import {writeAudit} from '../../../lib/audit';
-import {activityCatalog,activitySetup} from '../../../lib/activity-catalog';
+import {activityCatalog,activitySetup,activityCustomerPreferences} from '../../../lib/activity-catalog';
 import {activityRoleAllowed,canReadActivity,suggestedActivityKind,activitySourceFrame,activitySourceMatches,activityTerms,activityPlan,completeActivityPlan} from '../../../lib/activity-operations';
 export const dynamic='force-dynamic';
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{'Cache-Control':'no-store'}});
@@ -36,7 +36,11 @@ export async function GET(req){
  if(scheduleId)query=query.eq('arbox_schedule_id',scheduleId);
  if(profile.role!=='manager')query=query.eq('assigned_id',profile.id);
  const result=await query;if(result.error)return reply({error:'לא ניתן לטעון משימות פעילות'},503);
- const jobs=result.data.filter(job=>canReadActivity(profile,job)).map(job=>visibleJob(job,profile));
+ const allowed=result.data.filter(job=>canReadActivity(profile,job));
+ const visitIds=allowed.filter(job=>job.kind==='dj'&&job.visit_id).map(job=>job.visit_id);
+ const visits=visitIds.length?await db.from('biss_visits').select('id,preferences').in('id',visitIds):{data:[]};
+ if(visits.error)return reply({error:'לא ניתן לטעון את בקשות ההכנה של הלקוח'},503);
+ const jobs=allowed.map(job=>visibleJob({...job,customer_preferences:job.kind==='dj'?activityCustomerPreferences(visits.data.find(visit=>visit.id===job.visit_id)?.preferences):null},profile));
  let users=[];
  if(profile.role==='manager'){
   const people=await db.from('biss_users').select('id,full_name,email,role').eq('status','active').order('full_name');

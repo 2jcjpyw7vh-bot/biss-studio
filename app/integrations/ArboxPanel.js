@@ -7,7 +7,7 @@ import { supabaseBrowser } from "../../lib/supabase-browser";
 import ArboxRecruitment from "./ArboxRecruitment";
 import WorkoutTaskForm from "./WorkoutTaskForm";
 import ActivityTaskLink from "./ActivityTaskLink";
-import {suggestedActivityKind} from "../../lib/activity-operations";
+import {suggestedActivityKind,activityStatuses} from "../../lib/activity-operations";
 
 const displayDate = value => new Intl.DateTimeFormat("he-IL", {timeZone:"UTC",day:"numeric",month:"numeric"}).format(new Date(`${value}T00:00:00Z`));
 const isHourlyActivity=lesson=>suggestedActivityKind(lesson.name)!=="class";
@@ -104,11 +104,11 @@ export default function ArboxPanel() {
     <div className="row between">
       <div>
         <h2>לוח ארבוקס וחיבור</h2>
-        <div className="sub">שיעורים קרובים ושיוך בקשות לבניית אימון.</div>
+        <div className="sub">שיעורים ופעילויות קרובים, שיוך צוות ובקשות להכנה.</div>
       </div>
-      <span className="tag blue">קריאה בלבד</span>
+      <span className="tag blue">קריאה מארבוקס · ניהול ב־Studio</span>
     </div>
-    <div className="notice">בכניסה אישית של מנהלת אפשר לקרוא את הלוח וליצור ממנו משימת בניית אימון ב־Studio.</div>
+    <div className="notice">אפשר לפתוח משימת בניית אימון או הכנת פעילות מתוך היומן. השיוך וההכנה נשמרים ב־Studio; שינויים בהזמנה או בשיבוץ בארבוקס נעשים שם בנפרד.</div>
     <form className="continuity-login" onSubmit={check}>
       {!isManager&&<label className="field">PIN מנהל<input type="password" value={pin} onChange={e => setPin(e.target.value)} /></label>}
       <button className="btn primary" disabled={(!pin&&!isManager) || checking}>{checking ? "בודק חיבור…" : "בדיקת חיבור"}</button>
@@ -151,7 +151,7 @@ export default function ArboxPanel() {
           {schedule.lessons.map((lesson,index)=><article className="card" key={index}>
             <div className="row">
               <strong>{lesson.name}</strong>{lesson.cancelled&&<span className="tag">בוטל</span>}
-              {matchLabels[lesson.match]&&<span className={`tag ${lesson.match==="linked"?"green":""}`}>{matchLabels[lesson.match]}</span>}
+              {isHourlyActivity(lesson)?<span className="tag">{lesson.activityStatus?activityStatuses[lesson.activityStatus]:schedule.activityLookupUnavailable?"לא ניתן לבדוק משימת פעילות":"טרם נפתחה משימת פעילות"}</span>:matchLabels[lesson.match]&&<span className={`tag ${lesson.match==="linked"?"green":""}`}>{matchLabels[lesson.match]}</span>}
             </div>
             <div className="small">{displayDate(lesson.date)} · <bdi>{lesson.start}{lesson.end ? `–${lesson.end}` : ""}</bdi>{lesson.location && ` · ${lesson.location}`}</div>
             <div className={lesson.instructorName||lesson.secondInstructorName?"small":"notice"}>{lesson.instructorName||lesson.secondInstructorName?`${isHourlyActivity(lesson)?"צוות בארבוקס":"מדריכה"}: ${[lesson.instructorName,lesson.secondInstructorName].filter(Boolean).join(" · ")}`:isHourlyActivity(lesson)?"אחראי לא משובץ בארבוקס":"מדריכה לא משובצת"}</div>

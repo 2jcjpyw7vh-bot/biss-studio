@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {activitySetup} from '../lib/activity-catalog.js';
+import {activitySetup,activityCustomerPreferences} from '../lib/activity-catalog.js';
 import {activityVisitState} from '../lib/activity-visit-state.js';
 import {activitySourceFrame,suggestedActivityKind} from '../lib/activity-operations.js';
 import {loginTarget,loginDestination} from '../lib/studio-login.js';
@@ -35,4 +35,10 @@ test('operator destinations are bounded and confer neither instructor nor health
  assert.equal(loginTarget('activity:https://evil.example'),'');
  assert.equal(canAccessInstructorArea({role:'operator',status:'active'}),false);
  assert.equal(canViewAdaptations({role:'operator',status:'active',can_view_health:true}),false);
+});
+test('operator preparation receives only equipment requests and validated music, never general or medical notes',()=>{
+ const preferences=activityCustomerPreferences({equipmentRequests:'חיבור למחשב',musicTitle:'הסט שלי',musicUrl:'https://soundcloud.com/artist/demo',notes:'private medical note',health:'private',receipt:'private'});
+ assert.deepEqual(Object.keys(preferences).sort(),['equipmentRequests','musicTitle','musicUrl']);
+ assert.equal(JSON.stringify(preferences).includes('private'),false);
+ assert.equal(activityCustomerPreferences({musicUrl:'javascript:alert(1)'}).musicUrl,'');
 });
