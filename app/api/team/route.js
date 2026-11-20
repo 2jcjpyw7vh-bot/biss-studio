@@ -24,15 +24,15 @@ export async function GET(req){if(!await verifyAdminPin(req))return reply({error
 export async function POST(req){if(!await verifyAdminPin(req))return reply({error:"PIN שגוי"},401);const db=supabaseAdmin();if(!db)return reply({error:"מסד Studio אינו מחובר"},503);const b=await req.json();try{
  if(b.action==="user"){
   const full_name=clean(b.full_name,120),role=clean(b.role,20),email=clean(b.email,180).toLowerCase();
-  if(!full_name||!["manager","instructor","trainee"].includes(role))return reply({error:"חסר שם או תפקיד"},400);
-  const {data:user,error}=await db.from("biss_users").insert({full_name,email,phone:clean(b.phone,40),role,status:"active",can_view_health:role==="manager"||b.can_view_health===true}).select("id").single();
+  if(!full_name||!["manager","instructor","trainee","operator"].includes(role))return reply({error:"חסר שם או תפקיד"},400);
+  const {data:user,error}=await db.from("biss_users").insert({full_name,email,phone:clean(b.phone,40),role,status:"active",can_view_health:role==="manager"||(role==="instructor"&&b.can_view_health===true)}).select("id").single();
   if(error?.code==="23505")return reply({error:"כתובת המייל כבר רשומה. השתמשו בחשבון הקיים. מנהלת פעילה זמינה גם לשיבוץ כמדריכה."},409);
   if(error)throw error;
   await writeAudit(db,{action:"user.created",entityType:"user",entityId:user.id,label:full_name,metadata:{role}})
  }
  else if(b.action==="user_update"){
   const id=clean(b.id,120),role=clean(b.role,20),status=clean(b.status,20);
-  if(!id||!["manager","instructor","trainee"].includes(role)||!["active","inactive","invited"].includes(status))return reply({error:"פרטי ההרשאה אינם תקינים"},400);
+  if(!id||!["manager","instructor","trainee","operator"].includes(role)||!["active","inactive","invited"].includes(status))return reply({error:"פרטי ההרשאה אינם תקינים"},400);
   const{data:current,error:currentError}=await db.from("biss_users").select("id,full_name,email,auth_user_id,role,status").eq("id",id).single();if(currentError||!current)return reply({error:"המשתמשת לא נמצאה"},404);
   if(status==="invited"&&current.status!=="invited")return reply({error:"מצב הזמנה נקבע בעת ההזמנה"},400);
   if(current.role==="manager"&&current.status==="active"&&(role!=="manager"||status!=="active")){const{count,error:countError}=await db.from("biss_users").select("id",{count:"exact",head:true}).eq("role","manager").eq("status","active");if(countError)throw countError;if((count||0)<=1)return reply({error:"לא ניתן להשבית את המנהלת הפעילה האחרונה"},409)}

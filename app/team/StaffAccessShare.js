@@ -4,7 +4,7 @@ import Link from "next/link";
 import {useState} from "react";
 import {supabaseBrowser} from "../../lib/supabase-browser";
 
-export default function StaffAccessShare({userId,taskId,visitId,name,token}) {
+export default function StaffAccessShare({userId,taskId,visitId,activityId,name,token}) {
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState("");
   const [whatsapp,setWhatsapp]=useState("");
@@ -20,7 +20,7 @@ export default function StaffAccessShare({userId,taskId,visitId,name,token}) {
       const {data}=client?await client.auth.getSession():{};
       const accessToken=data?.session?.access_token||token;
       if(!accessToken){setLogin(true);throw Error("יש להיכנס לחשבון המנהלת האישי כדי לשלוח כניסה אישית.");}
-      const response=await fetch("/api/team/access",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${accessToken}`},body:JSON.stringify({userId,taskId,visitId,channel})});
+      const response=await fetch("/api/team/access",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${accessToken}`},body:JSON.stringify({userId,taskId,visitId,activityId,channel})});
       const result=await response.json();
       if(!response.ok){setLogin(response.status===401);throw Error(result.error);}
       setWhatsapp(result.whatsapp||"");
