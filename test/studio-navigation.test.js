@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {personalArea,workspaceSection,publicStudioPath} from "../lib/studio-navigation.js";
+import {personalArea,accountArea,workspaceSection,publicStudioPath} from "../lib/studio-navigation.js";
 
 test("personal navigation preserves role boundaries and known workspace destinations",()=>{
   assert.equal(personalArea("manager"),"/my-sessions");
@@ -12,4 +12,12 @@ test("personal navigation preserves role boundaries and known workspace destinat
   assert.equal(workspaceSection("__proto__"),"");
   assert.equal(publicStudioPath("/train/id/0"),true);
   assert.equal(publicStudioPath("/my-sessions"),false);
+});
+test('a customer visit keeps personal navigation in customer context without altering staff role destinations',()=>{
+ assert.equal(accountArea('manager','/my-visits'),'/my-visits');
+ assert.equal(accountArea('instructor','/my-program'),'/my-visits');
+ assert.equal(accountArea('manager','/my-sessions'),'/my-sessions');
+ assert.equal(accountArea('operator','/operations'),'/operations');
+ assert.equal(accountArea(undefined,'/my-visits'),'/login');
+ assert.equal(personalArea('manager'),'/my-sessions');
 });

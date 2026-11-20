@@ -60,7 +60,7 @@ export default function MySessionsPage(){
   return <main className="shell personal-workspace">
     <section className="personal-welcome">
       <div><div className="eyebrow">האזור האישי · {user.role==="manager"?"ניהול הסטודיו":"צוות ההדרכה"}</div><h1>שלום, {user.full_name}</h1></div>
-      <Link className="btn primary" href="/?tab=builder">בניית אימון חדש</Link>
+      <div className="row"><Link className="btn primary" href="/my-visits">הביקורים שלי כלקוח</Link><Link className="btn" href="/?tab=builder">בניית אימון חדש</Link></div>
     </section>
     <nav className="personal-shortcuts" aria-label="באזור האישי">
       <a href="#workout-tasks">בקשות לבניית אימון</a><a href="#upcoming-sessions">השיבוצים שלי</a><a href="#saved-workouts">האימונים ששמרתי</a>
