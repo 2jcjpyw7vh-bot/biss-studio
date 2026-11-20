@@ -1,17 +1,16 @@
-import {studioPlaylistType} from "../../../lib/studio-playlists";
+import {safeProgram,followUpApprovalError} from "../../../lib/follow-up-program";
 import {NextResponse} from "next/server";
 import {supabaseAdmin} from "../../../lib/supabase";
 import {writeAudit} from "../../../lib/audit";
 import {verifyAdminPin} from "../../../lib/admin-pin";
-import {programDateError,programPlaylistUrl} from "../../../lib/program-session";
+import {programDateError} from "../../../lib/program-session";
 
 export const dynamic="force-dynamic";
 const clean=(v,n=300)=>String(v||"").trim().slice(0,n);
 const isUuid=value=>typeof value==="string"&&/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value);
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
-const safeProgram=value=>({type:studioPlaylistType(value?.type),title:clean(value?.title,180),meta:clean(value?.meta,400),musicUrl:programPlaylistUrl(value?.musicUrl),musicTitle:clean(value?.musicTitle,120),sessions:Array.isArray(value?.sessions)?value.sessions.slice(0,60).map(session=>({type:studioPlaylistType(session?.type),name:clean(session?.name,120),progression:clean(session?.progression,80),musicUrl:programPlaylistUrl(session?.musicUrl),musicTitle:clean(session?.musicTitle,120),items:Array.isArray(session?.items)?session.items.slice(0,20).map(item=>({id:clean(item?.id,100),he:clean(item?.he,120),en:clean(item?.en,120),equipment:clean(item?.equipment,120),region:clean(item?.region,80),prescription:clean(item?.prescription,180),cue:clean(item?.cue,300)})):[]})):[]});
 
-async function snapshot(db){const[trainees,coaches,programs]=await Promise.all([db.from("biss_users").select("id,full_name").eq("role","trainee").eq("status","active").order("full_name"),db.from("biss_users").select("id,full_name,role").in("role",["manager","instructor"]).eq("status","active").order("full_name"),db.from("biss_programs").select("id,trainee_id,coach_id,title,status,equipment_access,starts_on,ends_on,created_at").order("created_at",{ascending:false}).limit(50)]);const error=trainees.error||coaches.error||programs.error;if(error)throw error;return{trainees:trainees.data||[],coaches:coaches.data||[],programs:programs.data||[]}}
+async function snapshot(db){const[trainees,coaches,programs]=await Promise.all([db.from("biss_users").select("id,full_name").eq("status","active").order("full_name"),db.from("biss_users").select("id,full_name,role").in("role",["manager","instructor"]).eq("status","active").order("full_name"),db.from("biss_programs").select("id,trainee_id,coach_id,title,status,equipment_access,starts_on,ends_on,created_at").order("created_at",{ascending:false}).limit(50)]);const error=trainees.error||coaches.error||programs.error;if(error)throw error;return{trainees:trainees.data||[],coaches:coaches.data||[],programs:programs.data||[]}}
 export async function GET(req) {
   if (!await verifyAdminPin(req)) return reply({error:"נדרש PIN מנהל"},401);
   const db = supabaseAdmin();
@@ -47,7 +46,17 @@ export async function POST(req) {
   const body = await req.json().catch(() => null);
   if (body?.action !== "assign") return reply({error:"פעולה לא מוכרת"},400);
 
-  const payload = safeProgram(body.program);
+  let payload = safeProgram(body.program);
+  let sourceTask=null;
+  if(body.task_id){
+    if(!isUuid(body.task_id))return reply({error:'משימת המקור אינה תקינה.'},400);
+    const t=await db.from('biss_workout_tasks').select('id,instructor_id,starts_at,frame').eq('id',body.task_id).maybeSingle();
+    if(t.error)return reply({error:'לא ניתן לבדוק את משימת התוכנית.'},503);
+    const problem=followUpApprovalError(t.data,body.trainee_id,body.coach_id,body.introduction_completed===true);
+    if(problem)return reply({error:problem},409);
+    if(body.expectedVersion!==t.data.frame.follow_up.updated_at)return reply({error:'המדריכה עדכנה את הטיוטה. יש לפתוח אותה מחדש לפני האישור.'},409);
+    sourceTask=t.data;payload=safeProgram(sourceTask.frame.follow_up.program);
+  }
   if (!body.trainee_id) return reply({error:"יש לבחור מתאמנת"},400);
   if (!payload.sessions.length || payload.sessions.some(session => !session.items.some(item => item.he))) {
     return reply({error:"בכל אימון בתוכנית חייב להופיע לפחות תרגיל אחד."},400);
@@ -55,12 +64,12 @@ export async function POST(req) {
   const dateError = programDateError(body.starts_on,body.ends_on);
   if (dateError) return reply({error:dateError},400);
 
-  const assignmentId = body.assignment_id;
+  const assignmentId = sourceTask?.id || body.assignment_id;
   if (assignmentId !== undefined && (typeof assignmentId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(assignmentId))) {
     return reply({error:"מזהה השמירה אינו תקין"},400);
   }
   const {data:trainee,error:traineeError} = await db.from("biss_users").select("id")
-    .eq("id",body.trainee_id).eq("role","trainee").eq("status","active").maybeSingle();
+    .eq("id",body.trainee_id).eq("status","active").maybeSingle();
   if (traineeError) return reply({error:"לא ניתן לבדוק את המתאמנת"},503);
   if (!trainee) return reply({error:"המתאמנת אינה פעילה"},409);
 
@@ -75,6 +84,12 @@ export async function POST(req) {
   }
 
   const now = new Date().toISOString();
+  if(sourceTask&&!sourceTask.frame.follow_up.review_locked_at){
+    const frame={...sourceTask.frame,follow_up:{...sourceTask.frame.follow_up,review_locked_at:now}};
+    const lock=await db.from('biss_workout_tasks').update({frame}).eq('id',sourceTask.id).filter('frame','eq',JSON.stringify(sourceTask.frame)).select('id').maybeSingle();
+    if(lock.error)return reply({error:'לא ניתן לשמור את גרסת האישור. אפשר לנסות שוב.'},503);
+    if(!lock.data)return reply({error:'הטיוטה השתנתה. יש לפתוח אותה מחדש לפני האישור.'},409);
+  }
   const row = {
     ...(assignmentId ? {id:assignmentId} : {}),
     trainee_id:trainee.id, coach_id:coachId, title:payload.title || "תוכנית BISS",
@@ -93,3 +108,5 @@ export async function POST(req) {
   await writeAudit(db,{action:"program.assigned",entityType:"program",entityId:program.id,label:row.title,metadata:{status:"active"}});
   return reply({program_id:program.id});
 }
+
+

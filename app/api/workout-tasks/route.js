@@ -8,6 +8,7 @@ import {publicWorkoutShare} from "../../../lib/public-workout-share";
 import {canReadWorkoutTask,matchesWorkoutTask,workoutTaskAlternatives,workoutTaskFrame} from "../../../lib/workout-task";
 import {introductionBrief} from '../../../lib/workout-task-notice';
 import {isPersonalIntroduction} from '../../../lib/activity-operations';
+import {safeProgram,followUpDraftError} from '../../../lib/follow-up-program';
 
 const reply=(body,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 const tasks=db=>db.from("biss_workout_tasks");
@@ -54,6 +55,21 @@ export async function POST(req) {
   const {db,profile,response}=await access(req);
   if(response)return response;
   const body=await req.json().catch(()=>null);
+  if(body?.action==='program-draft'){
+    if(!isRecruitmentId(body.id))return reply({error:'המשימה אינה תקינה.'},400);
+    const t=await tasks(db).select(fields).eq('id',body.id).eq('instructor_id',profile.id).maybeSingle();
+    if(t.error)return reply({error:'לא ניתן לבדוק את המשימה.'},503);
+    const program=safeProgram(body.program),problem=followUpDraftError(profile,t.data,program);
+    if(problem)return reply({error:problem},403);
+    if(t.data.frame.follow_up?.review_locked_at)return reply({error:'התוכנית נמצאת בבדיקת מנהל או כבר פורסמה. שינוי נוסף דורש תיאום עם המנהל.'},409);
+    const published=await db.from('biss_programs').select('id').eq('id',body.id).maybeSingle();
+    if(published.error)return reply({error:'לא ניתן לבדוק אם התוכנית כבר פורסמה.'},503);
+    if(published.data)return reply({error:'התוכנית כבר שויכה ללקוח. שינוי נוסף דורש בדיקת מנהל.'},409);
+    if((t.data.frame.follow_up?.updated_at||null)!==(body.expectedVersion||null))return reply({error:'הטיוטה השתנתה. יש לפתוח מחדש את המשימה.'},409);
+    const frame={...t.data.frame,follow_up:{program,updated_at:new Date().toISOString()}};
+    const saved=await tasks(db).update({frame}).eq('id',body.id).eq('instructor_id',profile.id).filter('frame','eq',JSON.stringify(t.data.frame)).select(fields).maybeSingle();
+    return saved.error?reply({error:'שמירת הטיוטה נכשלה.'},503):!saved.data?reply({error:'המשימה השתנתה. יש לרענן.'},409):reply({task:saved.data});
+  }
   if(body?.action==='brief'){
     if(profile.role!=='manager')return reply({error:'נדרשת הרשאת ניהול.'},403);
     if(!isRecruitmentId(body.id)||!isRecruitmentId(body.customerId))return reply({error:'יש לבחור משימה ולקוח רשום.'},400);
@@ -63,7 +79,8 @@ export async function POST(req) {
     if(t.data.submitted_at||Date.parse(t.data.starts_at)<=Date.now())return reply({error:'ניתן לעדכן תדריך לפני המפגש ולפני הגשת האימון.'},409);
     const brief=introductionBrief(body,c.data);
     if(!brief)return reply({error:'יש לאמת את רכישת סדרת ששת המפגשים עבור הלקוח הפעיל.'},400);
-    const saved=await tasks(db).update({frame:{...t.data.frame,brief}}).eq('id',body.id).is('submitted_at',null).select('id').maybeSingle();
+    if(t.data.frame.follow_up)return reply({error:'קיימת טיוטת תוכנית. שינוי הלקוח או התדריך דורש בדיקת מנהל לפני המשך.'},409);
+    const saved=await tasks(db).update({frame:{...t.data.frame,brief}}).eq('id',body.id).is('submitted_at',null).filter('frame','eq',JSON.stringify(t.data.frame)).select('id').maybeSingle();
     return saved.error?reply({error:'שמירת התדריך נכשלה.'},503):!saved.data?reply({error:'המשימה השתנתה. יש לרענן.'},409):reply({saved:true});
   }
   if(body?.action==="submit"){

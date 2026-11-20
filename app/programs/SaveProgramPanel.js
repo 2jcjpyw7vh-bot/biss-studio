@@ -5,7 +5,7 @@ import {useRef,useState} from "react";
 import {programDateError} from "../../lib/program-session";
 import ProgramAssignmentHistory from "./ProgramAssignmentHistory";
 
-export default function SaveProgramPanel({program}) {
+export default function SaveProgramPanel({program,sourceTask}) {
   const {user}=useStudioSession();
   const isManager=user?.role==="manager";
   const [open,setOpen] = useState(false);
@@ -14,7 +14,7 @@ export default function SaveProgramPanel({program}) {
   const [message,setMessage] = useState("");
   const [busy,setBusy] = useState(false);
   const [needsCoach,setNeedsCoach] = useState(false);
-  const [traineeId,setTraineeId] = useState("");
+  const [traineeId,setTraineeId] = useState(sourceTask?.frame?.brief?.customerId||"");
   const [revision,setRevision] = useState(0);
   const pending = useRef(null);
 
@@ -50,7 +50,7 @@ export default function SaveProgramPanel({program}) {
     const fields = Object.fromEntries(new FormData(form));
     const dateError = programDateError(fields.starts_on,fields.ends_on);
     if (dateError) {setMessage(dateError);return;}
-    const body = {action:"assign",program,trainee_id:traineeId,...fields};
+    const body = {action:"assign",program,trainee_id:traineeId,...fields,...(sourceTask?{task_id:sourceTask.id,coach_id:sourceTask.instructor_id,expectedVersion:sourceTask.frame.follow_up?.updated_at,introduction_completed:fields.introduction_completed==='on'}:{})};
     const fingerprint = JSON.stringify(body);
     if (pending.current?.fingerprint !== fingerprint) {
       pending.current = {fingerprint,id:crypto.randomUUID()};
@@ -70,11 +70,12 @@ export default function SaveProgramPanel({program}) {
       {!isManager&&<label className="field">PIN מנהל<input type="password" value={pin} disabled={busy} onChange={e=>{setPin(e.target.value);setData(null);setTraineeId("");setMessage("");}}/></label>}
       {!data&&<button className="btn" disabled={(!pin&&!isManager)||busy} onClick={()=>request()}>טעינת משתמשות</button>}
     </div>
-    {data&&<label className="field">מתאמנת<select name="trainee_id" disabled={busy} value={traineeId} onChange={e=>{setTraineeId(e.target.value);setMessage("");}}>
+    {data&&<label className="field">מתאמנת<select name="trainee_id" disabled={busy||Boolean(sourceTask)} value={traineeId} onChange={e=>{setTraineeId(e.target.value);setMessage("");}}>
         <option value="" disabled>בחירה</option>{data.trainees.map(x=><option key={x.id} value={x.id}>{x.full_name}</option>)}
     </select></label>}
     {data&&program&&<form className="program-assignment" onSubmit={submit}>
-      <label className="field">מדריכה מאשרת<select name="coach_id" defaultValue="" required={needsCoach}>
+      {sourceTask&&<label className="permission-check"><input name="introduction_completed" type="checkbox" required/>מפגש ההתאמה הושלם, והתוכנית והציוד נבדקו עם המדריכה לפני הפרסום ללקוח.</label>}
+      <label className="field">מדריכה מאשרת<select name="coach_id" defaultValue={sourceTask?.instructor_id||''} disabled={Boolean(sourceTask)} required={needsCoach}>
         <option value="">ללא מדריכה מאשרת</option>{data.coaches.map(x=><option key={x.id} value={x.id}>{x.full_name}</option>)}
       </select></label>
       <label className="permission-check"><input name="equipment_access" value="true" type="checkbox" checked={needsCoach} onChange={e=>setNeedsCoach(e.target.checked)}/> אישור שימוש במכשירים לפי התוכנית בלבד</label>
