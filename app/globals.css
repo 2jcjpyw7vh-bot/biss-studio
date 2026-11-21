@@ -750,3 +750,6 @@ input,select,textarea{min-height:46px;border-color:#dce4de;background:#fcfdfc}
 
 .builder-focus{scroll-margin-top:140px;outline:none}.program-picker{margin-block:10px;min-width:0}.program-picker-option{display:grid;gap:6px;border-block-end:1px solid var(--line,#dce3de);padding-block:12px;min-width:0;overflow-wrap:anywhere}.program-picker .btn{white-space:normal;max-width:100%}.program-picker .filters{min-width:0}@media(max-width:600px){.program-picker .filters{grid-template-columns:minmax(0,1fr)}.program-picker select,.program-picker input{min-width:0;max-width:100%;box-sizing:border-box}}
 
+
+.program-session-exercise{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;line-height:1.6;min-width:0;overflow-wrap:anywhere}.program-session-exercise>strong{font-size:16px;line-height:1.5}.program-session-exercise>.btn{justify-self:start;display:inline-flex;white-space:normal;max-width:100%;line-height:1.5}.program-session-exercise>.small{line-height:1.65}
+

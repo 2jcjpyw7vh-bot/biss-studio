@@ -10,7 +10,7 @@ export function ProgramPlaylist({program, session}) {
 export default function ProgramSessionDetails({program, session,exerciseHref,onExercise}) {
   return <>
     <ProgramPlaylist program={program} session={session}/>
-    {session.items?.map((item, index) => <div className="workout-item" key={index}>
+    {session.items?.map((item, index) => <div className="workout-item program-session-exercise" key={index}>
       <strong>{item.he}</strong>
       <div>{item.prescription}</div>
       {item.cue && <div className="small">{item.cue}</div>}
