@@ -747,3 +747,6 @@ input,select,textarea{min-height:46px;border-color:#dce4de;background:#fcfdfc}
 @media(max-width:600px){.activity-workspace .filters{grid-template-columns:minmax(0,1fr)}.activity-workspace .row>.btn{flex:1 1 100%}.activity-workspace .personal-welcome{display:block}}
 .activity-contact-card{margin-block:14px;min-width:0;overflow-wrap:anywhere}.activity-contact-card .btn{max-width:100%;white-space:normal;box-sizing:border-box}.activity-contacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
 @media(max-width:600px){.activity-contact-card .row>.btn{flex:1 1 100%}}
+
+.builder-focus{scroll-margin-top:140px;outline:none}.program-picker{margin-block:10px;min-width:0}.program-picker-option{display:grid;gap:6px;border-block-end:1px solid var(--line,#dce3de);padding-block:12px;min-width:0;overflow-wrap:anywhere}.program-picker .btn{white-space:normal;max-width:100%}.program-picker .filters{min-width:0}@media(max-width:600px){.program-picker .filters{grid-template-columns:minmax(0,1fr)}.program-picker select,.program-picker input{min-width:0;max-width:100%;box-sizing:border-box}}
+

@@ -2,6 +2,7 @@
 import {useState} from "react";
 import ProgramSessionDetails from "./ProgramSessionDetails";
 import {programPlaylistUrl} from "../../lib/program-session";
+import ProgramExercisePicker from './ProgramExercisePicker';
 
 function SessionPlaylistEditor({session, onSave}) {
   const [error, setError] = useState("");
@@ -33,18 +34,19 @@ function SessionPlaylistEditor({session, onSave}) {
   </details>;
 }
 
-export default function ProgramResult({program, onPlaylist, onOffer}) {
+export default function ProgramResult({program, onPlaylist, onOffer, library=[],onReplace,onExercise,taskId=''}) {
   return <>
     <h2>{program.title}</h2>
     <div className="sub">{program.meta}</div>
-    {program.sessions.map((session,index) => <article className="card" style={{marginTop:10}} key={index}>
+    {program.sessions.map((session,index) => <article className="card" id={`program-session-${index}`} style={{marginTop:10,scrollMarginTop:140}} key={index}>
       <div className="row between">
         <h3>{session.name}</h3>
         <button className="btn" type="button" disabled={!session.items.length} onClick={() => onOffer(session)}>הציעי למחליפה</button>
       </div>
       <p className="small">{session.progression}</p>
       <SessionPlaylistEditor session={session} onSave={playlist => onPlaylist(index,playlist)}/>
-      <ProgramSessionDetails program={program} session={session}/>
+      <ProgramSessionDetails program={program} session={session} exerciseHref={onExercise?item=>`/exercise/${encodeURIComponent(item.id)}?from=program&session=${index}${taskId?`&task=${encodeURIComponent(taskId)}`:''}`:undefined} onExercise={item=>onExercise?.(item,index)}/>
+      {onReplace&&<details><summary>עריכת תרגילים באימון</summary>{session.items.map((item,itemIndex)=><div key={`${itemIndex}-${item.id}`} className="card"><h4>{item.he}</h4><label className="field">חזרות, סטים והנחיות · {item.he}<input maxLength={180} value={item.prescription||''} onChange={event=>onReplace(index,itemIndex,{...item,prescription:event.target.value})}/></label><ProgramExercisePicker item={item} items={session.items} library={library} onPick={replacement=>onReplace(index,itemIndex,replacement)}/></div>)}</details>}
     </article>)}
   </>;
 }
