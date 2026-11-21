@@ -33,7 +33,7 @@ import {studioAdminHeaders} from "../lib/studio-admin-client";
 
 import {PILATES_TYPE,TRX_TYPE,PILATES_STRUCTURES,TRX_STRUCTURES,SPECIALTY_NOTICES,specialtyCatalog,planPilatesWorkout} from "../lib/specialty-workouts";
 import {variedExerciseOrder,repeatedExerciseSet} from "../lib/workout-variation";
-import {selectProgramExercises,programRegions} from "../lib/program-selection";
+import {selectProgramExercises,programRegions,programPrescription} from "../lib/program-selection";
 import {rememberProgram,recalledProgram} from './program-navigation';
 
 const levels=["מתחילים","בינוניים","מתקדמים","מעורב"];
@@ -505,7 +505,7 @@ export default function Home(){
      const chosen=selection.items;
      if(program?.sessions?.[i]?.items&&repeatedExerciseSet(chosen,program.sessions[i].items)){setProgramError("הסינון מאפשר שוב את אותם תרגילים. הרחיבי ציוד או אזורים כדי לקבל חלופה; התוכנית הקודמת לא הוחלפה.");return;}
      const progression=week===1?"בסיס טכני ועומס שמרני":week===2?"תוספת 1–2 חזרות או מעט משקל":week===3?"העלאת עומס/מורכבות תוך שמירת טכניקה":"התקדמות מבוקרת לפי איכות ביצוע";
-     sessions.push({name:followUp?`אימון המשך ${i+1}`:`שבוע ${week} · אימון ${(i%programFreq)+1}`,progression,items:chosen.map((x,j)=>({...x,prescription:week<=2?`${10+j%3} חזרות × 3 סטים`:`${8+j%3} חזרות × 3–4 סטים`}))});
+     sessions.push({name:followUp?`אימון המשך ${i+1}`:`שבוע ${week} · אימון ${(i%programFreq)+1}`,progression,items:chosen.map((x,j)=>({...x,prescription:programPrescription(x,week,j)}))});
    }
    setProgram({title:followUp?`תוכנית אישית · ${task.frame.brief.customerName} · 5 אימוני המשך`:`תוכנית BISS · ${programWeeks} שבועות`,meta:followUp?`5 אימוני המשך · המועדים נקבעים בארבוקס · ${equipmentLabel}`:`${programFreq} אימונים בשבוע · ${regions.length?regionLabel:"Full Body"} · ${equipmentLabel}`,type:programPlaylistType,sessions,musicUrl:playlistUrl,musicTitle:programMusic.musicTitle.trim()||"פלייליסט לתוכנית"}); setTab("programResult");
  }
