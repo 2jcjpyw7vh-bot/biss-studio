@@ -187,6 +187,9 @@ export default function LoginPage() {
     if (error) { setMessage("היציאה נכשלה. אפשר לנסות שוב."); return; }
     setProfile(null);
     clearPending();
+    setShowCode(false);
+    setCheckFailed(false);
+    setVerifyUntil(0);
     setAccessToken("");
     setTokenHash("");
     setBlocked(false);
@@ -203,7 +206,7 @@ export default function LoginPage() {
     {client && !checking && checkFailed && <button className="btn primary" onClick={()=>setCheckAttempt(n=>n+1)}>בדיקה חוזרת של החיבור השמור</button>}
     {client && !checking && !checkFailed && !blocked && tokenHash && <div className="safe">
       <button className="btn primary" disabled={busy||verifySeconds>0} onClick={() => verify({token_hash:tokenHash})}>{verifySeconds>0?`אפשר לנסות שוב בעוד ${verifySeconds} שנ׳`:'אישור כניסה ל־BISS Studio'}</button>
-      <button className="btn" disabled={busy} onClick={() => {setTokenHash("");setShowCode(true);}}>כניסה עם קוד</button>
+      <button className="btn" disabled={busy} onClick={() => {setTokenHash("");setShowCode(false);setCode('');setMessage('הזיני את כתובת המייל ושלחי קוד חדש כדי להמשיך.');}}>בקשת קוד חדש למייל</button>
     </div>}
     {client && !checking && !checkFailed && !blocked && !tokenHash && <>
       {!showCode?<form onSubmit={sendLink}>
