@@ -1,9 +1,10 @@
 "use client";
 import StudioSocialLinks from "../StudioSocialLinks";
 import Link from "next/link";
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import {supabaseBrowser} from "../../lib/supabase-browser";
 import {existingLoginAction,loginEntryDestination, loginTarget} from "../../lib/studio-login";
+import {resendWait,pendingLoginKey,pendingLoginRequest,loginFlowError} from '../../lib/login-email-flow';
 
 const roleLabels={manager:"מנהלת",instructor:"מדריכה",trainee:"לקוח/ה",operator:"מתפעל/ת"};
 
@@ -34,9 +35,19 @@ export default function LoginPage() {
   const [next,setNext] = useState("");
   const [checkFailed,setCheckFailed] = useState(false);
   const [checkAttempt,setCheckAttempt] = useState(0);
+  const [sentAt,setSentAt]=useState(0),[clock,setClock]=useState(Date.now());
+  const [verifyUntil,setVerifyUntil]=useState(0);
+  const sending=useRef(false);
+  const verifying=useRef(false);
+  const resendSeconds=resendWait(sentAt,clock);
+  const verifySeconds=Math.max(0,Math.ceil((verifyUntil-clock)/1000));
+  useEffect(()=>{if(!sentAt&&!verifyUntil)return;const timer=setInterval(()=>setClock(Date.now()),1000);return()=>clearInterval(timer);},[sentAt,verifyUntil]);
+  function clearPending(target=next){try{sessionStorage.removeItem(pendingLoginKey(target));}catch{}}
+  function changeEmail(){clearPending();setCode('');setShowCode(false);setMessage('הזיני את הכתובת הנכונה ושלחי אליה קוד חדש.');}
 
   async function finish(session, target, verifiedUser) {
     const user = verifiedUser || await studioProfile(session);
+    clearPending(target);
     const destination = loginEntryDestination(target,user.role);
     if (destination) {
       window.location.replace(destination);
@@ -58,14 +69,17 @@ export default function LoginPage() {
     setNext(target);
     if (!client) { setChecking(false); return; }
     const hash = fragment.get("token_hash");
+    if(!hash&&!fragment.has('error')&&!url.searchParams.has('error')){
+      try{const pending=pendingLoginRequest(sessionStorage.getItem(pendingLoginKey(target)),target);if(pending){setEmail(pending.email);setSentAt(pending.sentAt);setShowCode(true);}}catch{}
+    }
     if (hash) {
       window.history.replaceState(null, "", url.pathname + url.search);
       if (/^[A-Za-z0-9_-]{20,200}$/.test(hash)) setTokenHash(hash);
       else setMessage("קישור הכניסה אינו תקף. אפשר להשתמש בקוד מהמייל או לבקש הודעה חדשה.");
     }
     if (fragment.has("error") || url.searchParams.has("error")) {
-      setMessage("קישור הכניסה פג או כבר נפתח. הזיני את הקוד מהמייל אם הוא עדיין בתוקף, או בקשי הודעה חדשה.");
-      setShowCode(true);
+      setMessage("קישור הכניסה אינו זמין. הזיני את כתובת המייל ושלחי קוד חדש כדי להמשיך.");
+      setShowCode(false);
     }
     async function check() {
       const {data,error} = await client.auth.getSession();
@@ -90,8 +104,11 @@ export default function LoginPage() {
 
   async function sendLink(event) {
     event.preventDefault();
+    if(sending.current||resendWait(sentAt)>0)return;
+    sending.current=true;
     setBusy(true);
     setMessage("");
+    setCode('');
     try {
       const redirect = new URL("/login", window.location.origin);
       if (next) redirect.searchParams.set("next", next);
@@ -100,37 +117,48 @@ export default function LoginPage() {
         options:{shouldCreateUser:true,emailRedirectTo:redirect.href}
       });
       if (error) {
-        setMessage(error.status === 429
-          ? "נשלחו לאחרונה יותר מדי בקשות. המתיני לפני ניסיון נוסף או השתמשי בהודעה שכבר קיבלת."
-          : "שליחת מייל הכניסה נכשלה. בדקי שזו הכתובת הרשומה ב־BISS Studio.");
+        setMessage(loginFlowError(error,'send'));
+        if(error.status===429){setSentAt(Date.now());setClock(Date.now());}
         return;
       }
       setShowCode(true);
-      setMessage("נשלחה הודעה מ־BISS Studio. אפשר לפתוח את הקישור במייל או להזין כאן את הקוד שמופיע בו.");
+      const sent=Date.now();setSentAt(sent);setClock(sent);setEmail(email.trim().toLowerCase());
+      try{sessionStorage.setItem(pendingLoginKey(next),JSON.stringify({email:email.trim().toLowerCase(),target:next,sentAt:sent}));}catch{}
+      setMessage("הבקשה לשליחת קוד התקבלה. פתחי את המייל האחרון מ־BISS Studio והעתיקי את הקוד לכאן. ייתכן שהגעת המייל תימשך מעט זמן.");
     } catch {
       setMessage("שליחת מייל הכניסה נכשלה. אפשר לנסות שוב.");
     } finally {
       setBusy(false);
+      sending.current=false;
     }
   }
 
   async function verify(credentials) {
+    if(verifying.current||Date.now()<verifyUntil)return;
+    verifying.current=true;
     setBusy(true);
     setMessage("");
+    let authenticated=false;
     try {
       const {data,error} = await client.auth.verifyOtp({...credentials,type:"email"});
       if (error || !data.session) {
-        setTokenHash("");
-        setShowCode(true);
-        setMessage("קוד או קישור הכניסה פג, שגוי או שכבר נעשה בו שימוש. אפשר לבקש הודעה חדשה.");
+        const throttled=error?.status===429||['over_request_rate_limit','over_email_send_rate_limit'].includes(error?.code);
+        if(!throttled)setTokenHash("");
+        if(throttled){setVerifyUntil(Date.now()+60000);setClock(Date.now());}
+        setCode('');
+        setShowCode(Boolean(email));
+        setMessage(loginFlowError(error,'verify'));
         return;
       }
       setBlocked(true);
+      authenticated=true;
       await finish(data.session, next);
     } catch (error) {
+      if(authenticated)setCheckFailed(true);
       setMessage(error.message || "לא ניתן להשלים את הכניסה.");
     } finally {
       setBusy(false);
+      verifying.current=false;
     }
   }
 
@@ -158,6 +186,7 @@ export default function LoginPage() {
     const {error} = await client.auth.signOut({scope:"local"});
     if (error) { setMessage("היציאה נכשלה. אפשר לנסות שוב."); return; }
     setProfile(null);
+    clearPending();
     setAccessToken("");
     setTokenHash("");
     setBlocked(false);
@@ -168,24 +197,28 @@ export default function LoginPage() {
   return <main className="shell auth-shell"><section className="panel auth-card">
     <div className="eyebrow">BISS STUDIO · כניסה אישית</div>
     <h1>{next==="account"?"הגדרות החשבון":next === "arbox" ? "כניסת מנהלת ללוח Arbox" : "כניסה אישית ל־BISS Studio"}</h1>
-    {!profile&&<p className="sub">כניסה חד־פעמית עם המייל הרשום בסטודיו. החיבור נשמר בדפדפן הזה ומתחדש אוטומטית כל עוד הוא תקף.</p>}
+    {!profile&&<p className="sub">נשלח קוד למייל הרשום בסטודיו. לאחר הכניסה החיבור נשמר בדפדפן הזה כל עוד הוא תקף.</p>}
     {!client && <div className="notice">שירות הכניסה של BISS Studio אינו זמין כרגע.</div>}
     {client && checking && <p role="status">בודק כניסה קיימת…</p>}
     {client && !checking && checkFailed && <button className="btn primary" onClick={()=>setCheckAttempt(n=>n+1)}>בדיקה חוזרת של החיבור השמור</button>}
     {client && !checking && !checkFailed && !blocked && tokenHash && <div className="safe">
-      <button className="btn primary" disabled={busy} onClick={() => verify({token_hash:tokenHash})}>אישור כניסה ל־BISS Studio</button>
+      <button className="btn primary" disabled={busy||verifySeconds>0} onClick={() => verify({token_hash:tokenHash})}>{verifySeconds>0?`אפשר לנסות שוב בעוד ${verifySeconds} שנ׳`:'אישור כניסה ל־BISS Studio'}</button>
       <button className="btn" disabled={busy} onClick={() => {setTokenHash("");setShowCode(true);}}>כניסה עם קוד</button>
     </div>}
     {client && !checking && !checkFailed && !blocked && !tokenHash && <>
-      <form onSubmit={sendLink}>
+      {!showCode?<form onSubmit={sendLink}>
+        <p className="login-step">שלב 1 מתוך 2 · לאן לשלוח את הקוד?</p>
         <label className="field">כתובת המייל הרשומה<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/></label>
-        <button className="btn primary" disabled={busy}>{showCode?"שליחת הודעת כניסה חדשה":"שליחת הודעת כניסה"}</button>
-        {!showCode && <button type="button" className="btn" disabled={busy} onClick={() => setShowCode(true)}>כבר יש לי קוד</button>}
-      </form>
-      {showCode && <form onSubmit={event => {event.preventDefault();verify({email:email.trim().toLowerCase(),token:code});}}>
-        <label className="field">קוד מהמייל<input inputMode="numeric" autoComplete="one-time-code" dir="ltr" value={code} maxLength={10} onChange={e=>setCode(e.target.value.replace(/\D/g,""))}/></label>
-        <button className="btn primary" disabled={busy || !email || code.length < 6}>אימות קוד וכניסה</button>
-      </form>}
+        <button className="btn primary" disabled={busy||resendSeconds>0}>{busy?'שולח קוד…':resendSeconds>0?`אפשר לשלוח שוב בעוד ${resendSeconds} שנ׳`:'שליחת קוד למייל'}</button>
+      </form>:<div className="login-code-step">
+      <p className="login-step">שלב 2 מתוך 2 · הקוד מהמייל האחרון</p>
+      <p>הקוד נשלח לכתובת <strong dir="ltr">{email}</strong></p>
+      <p className="small">פתחי את ההודעה האחרונה מ־BISS Studio, בדקי את שעת השליחה והעתיקי את כל ספרות הקוד. אין להשתמש בקודים מהודעות קודמות. אין צורך לבקש מייל נוסף בזמן ההמתנה.</p>
+      <form onSubmit={event => {event.preventDefault();verify({email:email.trim().toLowerCase(),token:code});}}>
+        <label className="field">הקוד מההודעה האחרונה<input autoFocus inputMode="numeric" autoComplete="one-time-code" dir="ltr" value={code} maxLength={10} onChange={e=>setCode(e.target.value.replace(/\D/g,""))}/></label>
+        <button className="btn primary" disabled={busy || !email || code.length < 6||verifySeconds>0}>{verifySeconds>0?`אפשר לנסות שוב בעוד ${verifySeconds} שנ׳`:'אימות קוד וכניסה'}</button>
+      </form><details><summary>המייל לא הגיע או שהקוד לא עובד?</summary><p className="small">בדקי דואר זבל ואת הכתובת שמופיעה למעלה. אם התקבלו כמה הודעות, השתמשי באחרונה בלבד. שליחה חוזרת עשויה לחייב המתנה נוספת אצל ספק הכניסה.</p><button type="button" className="btn" disabled={busy||resendSeconds>0} onClick={sendLink}>{resendSeconds>0?`אפשר לשלוח קוד חדש בעוד ${resendSeconds} שנ׳`:'שליחת קוד חדש לאותה כתובת'}</button><button type="button" className="btn" disabled={busy} onClick={changeEmail}>שינוי כתובת המייל</button></details>
+      </div>}
     </>}
     {!profile&&!checking&&<p className="small">באייפון מומלץ לפתוח תמיד ב־Safari באותו דפדפן, או לשמור קיצור למסך הבית. דפדפן פנימי של וואטסאפ, גלישה פרטית או מחיקת נתוני האתר עשויים לדרוש כניסה נפרדת.</p>}
     {profile && <div className="safe"><strong>שלום {profile.full_name}</strong><p>תפקיד: {roleLabels[profile.role] || profile.role}</p>
