@@ -753,3 +753,6 @@ input,select,textarea{min-height:46px;border-color:#dce4de;background:#fcfdfc}
 
 .program-session-exercise{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;line-height:1.6;min-width:0;overflow-wrap:anywhere}.program-session-exercise>strong{font-size:16px;line-height:1.5}.program-session-exercise>.btn{justify-self:start;display:inline-flex;white-space:normal;max-width:100%;line-height:1.5}.program-session-exercise>.small{line-height:1.65}
 
+
+.login-code-step{display:grid;gap:14px;min-width:0}.login-step{font-weight:800;color:#216045;margin-block:0 4px}.login-code-step p{margin:0;line-height:1.65}.login-code-step strong{overflow-wrap:anywhere}.login-code-step details{border-top:1px solid var(--line,#dce3de);padding-top:14px}.login-code-step details .btn{display:block;width:100%;margin-top:10px;white-space:normal;line-height:1.5}.auth-card input{font-size:16px;min-width:0}.auth-card .btn{white-space:normal}
+
